@@ -2008,14 +2008,14 @@ function abrirValidarPacientes(aid, rutaGrupo){
       errorTipo='Sin finalidad registrada';
       const esperadas=finalidades.map(f2=>FIN_LBL[f2]?`${f2} – ${FIN_LBL[f2]}`:f2).join(' / ');
       solucion=esperadas
-        ?`El registro no cuenta con código de finalidad. Según ${NORMA}, esta actividad requiere registrar la finalidad: ${esperadas}`
-        :'El registro no cuenta con código de finalidad. Debe completarse con el código que corresponda según la normativa vigente.';
+        ?`Campo de finalidad vacío. Complete el registro con el código ${esperadas}, conforme al Anexo técnico de la ${NORMA}.`
+        :'Campo de finalidad vacío. Complete el registro con el código que corresponda según el Anexo técnico de la normativa vigente.';
       errorColor='#b45309';errorBg='#fffbeb';
     } else if(finalidades.length&&!finSet.has(fin)){
       const finDesc=FIN_LBL[fin]||fin;
       const esperadas=finalidades.map(f2=>FIN_LBL[f2]?`${f2} – ${FIN_LBL[f2]}`:f2).join(' / ');
       errorTipo=`Finalidad ${fin} — ${finDesc}`;
-      solucion=`La finalidad registrada (${fin} – ${finDesc}) no corresponde a esta actividad según ${NORMA}. La finalidad requerida es: ${esperadas}.`;
+      solucion=`Finalidad incorrecta: el Anexo técnico de la ${NORMA} exige código ${esperadas} para esta actividad. Corrija el registro en el sistema.`;
       errorColor='#dc2626';errorBg='#fef2f2';
     }
     // Ruta cruzada: paciente pertenece a ruta diferente al programa
@@ -2026,8 +2026,7 @@ function abrirValidarPacientes(aid, rutaGrupo){
       if(rutasCruz.length&&!grupos.some(g=>['EMBARAZADA','PRECONCEPCIONAL','PLANIFICACION','DM','HIPERTENSION'].includes(g))){
         const rutaLabel=rutasCruz.map(g=>RUTA_LBL[g]||g).join(', ');
         if(!errorTipo){errorTipo='Ruta cruzada';errorColor='#7c3aed';errorBg='#f5f3ff';}
-        solucion=(solucion?solucion+' Adicionalmente, el ':' El')
-          +`paciente figura en la ruta ${rutaLabel}. El prestador debe verificar si la atención también aplica para dicha ruta o si el registro es un duplicado entre programas.`;
+        solucion=(solucion?solucion+' ':'')+`Afiliado clasificado en la ruta de ${rutaLabel}. Verifique si la atención corresponde a ese programa; de ser así, registre el servicio bajo la ruta correcta en el sistema (${NORMA}).`;
       }
     }
     // Diagnóstico cruzado (consultas): DX sugiere otro programa
@@ -2036,7 +2035,7 @@ function abrirValidarPacientes(aid, rutaGrupo){
       const esCorr=grupos.some(g=>diag==='Z001'&&g==='PRIMERA_INFANCIA'||diag==='Z002'&&g==='INFANCIA'||diag==='Z003'&&g==='ADOLESCENCIA'||diag==='Z108'&&['JOVENES','ADULTEZ','VEJEZ'].includes(g));
       if(!esCorr){
         if(!errorTipo){errorTipo='Diagnóstico no corresponde al curso de vida';errorColor='#0369a1';errorBg='#f0f9ff';}
-        solucion=(solucion?solucion+' ':'')+`El diagnóstico principal ${diag} clasifica al paciente en ${progDx} según la tabla de clasificación por DX de la ${NORMA}. El prestador debe verificar si la atención corresponde al programa evaluado o al de ${progDx}.`;
+        solucion=(solucion?solucion+' ':'')+`Dx ${diag} clasifica al paciente en ${progDx} según el Anexo de clasificación por CIE-10 de la ${NORMA}. Si la atención es para ${progDx}, repórtela bajo esa ruta; si no, corrija el código diagnóstico.`;
       }
     }
     // Modo ruta cruzada: el error principal es la clasificación del paciente
@@ -2044,9 +2043,19 @@ function abrirValidarPacientes(aid, rutaGrupo){
       const RUTA_LBL3={'EMBARAZADA':'Embarazada','PRECONCEPCIONAL':'Preconcepcional','PLANIFICACION':'Planificación Familiar','DM':'Diabetes Mellitus','HIPERTENSION':'Hipertensión'};
       const rutaNom=RUTA_LBL3[rutaGrupo]||rutaGrupo;
       errorTipo='Registro en programa diferente al afiliado';
-      solucion=`El paciente está clasificado en la ruta de ${rutaNom}. Este registro aparece en la actividad del programa evaluado, lo cual puede indicar una atención compartida entre programas. El prestador debe confirmar si la atención corresponde a ${rutaNom} o al programa evaluado, y ajustar el registro en el sistema de información.`+(solucion?' '+solucion:'');
+      // Detectar incompatibilidad evidente (ej. menor de edad en Planificación Familiar)
+      const cvPac=meta.grupo||'';
+      const menorEnPF=rutaGrupo==='PLANIFICACION'&&['PRIMERA_INFANCIA','INFANCIA','ADOLESCENCIA'].includes(cvPac);
+      const cvLbl=GRUPO_LBL[cvPac]||cvPac;
+      let solRuta;
+      if(menorEnPF){
+        solRuta=`El afiliado está clasificado en ${cvLbl}${edad?' ('+edad+')':''} y no corresponde a Planificación Familiar. Verifique si existe un error de identificación o traslade el registro al programa correcto (${NORMA}).`;
+      } else {
+        solRuta=`Afiliado clasificado en la ruta de ${rutaNom}. Registre este servicio bajo esa ruta en el sistema (${NORMA}).`;
+      }
+      solucion=solRuta+(solucion?' '+solucion:'');
       errorColor='#92400e';errorBg='#fef3c7';
-    } else if(!errorTipo){errorTipo='Error de finalidad';solucion=`Revisar y corregir el código de finalidad de acuerdo con ${NORMA}.`;}
+    } else if(!errorTipo){errorTipo='Error de finalidad';solucion=`Corrija el código de finalidad según el Anexo técnico de la ${NORMA}.`;}
     filas.push({rowKey:rk,tipo,num,fecha,fin,diag,edad,sexo,cursoVida,errorTipo,solucion,errorColor,errorBg});
   }
   filas.sort((a,b)=>a.num.localeCompare(b.num));
