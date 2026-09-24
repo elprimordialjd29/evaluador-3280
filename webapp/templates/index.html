@@ -2167,8 +2167,9 @@ function abrirModalAuditoria(){
     RCV_RIESGO:'❤️ RCV',RCV_DM:'❤️ RCV',RCV_DM_HTA:'❤️ RCV'
   };
   const CAT_COLOR={'📋 Cursos de Vida':'#1E40AF','🤰 Ruta Materna':'#9D174D','🔁 Demanda Inducida':'#065F46','❤️ RCV':'#92400E'};
-  // Totales globales para el encabezado
+  // Totales globales para el encabezado — guardados como globales para imprimirAuditoria
   let gTotalActs=0,gBien=0,gMal=0;
+  window._auditStats={total:0,bien:0,mal:0,prestador:'',fecha:''};
   const progOrdenado=[...ORDEN_PROG_A.filter(p=>d.resultados&&d.resultados[p]),
     ...Object.keys(d.resultados||{}).filter(p=>!ORDEN_PROG_A.includes(p))];
   for(const prog of progOrdenado){
@@ -2180,6 +2181,9 @@ function abrirModalAuditoria(){
       else gBien++;
     }
   }
+  window._auditStats={total:gTotalActs,bien:gBien,mal:gMal,
+    prestador:document.getElementById('sel-prestador')?.selectedOptions?.[0]?.text||'',
+    fecha:new Date().toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'})};
   // HTML del cuerpo
   let html='';
   // Chips resumen de rutas cruzadas
@@ -2199,24 +2203,26 @@ function abrirModalAuditoria(){
   if(rutasConDatos.length){
     html+=`<div style="margin-bottom:18px;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden">
       <div style="background:#4C1D95;color:white;padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Rutas cruzadas detectadas</div>
+      <div style="background:#EEF2FF;border-bottom:1px solid #C7D2FE;padding:7px 14px;font-size:9px;color:#3730A3;line-height:1.5">
+        <b>Nota metodológica:</b> La detección de pacientes en ruta cruzada se realiza por <b>código diagnóstico CIE-10</b> registrado en el RIPS (no por el campo de finalidad). La columna "Sin finalidad" muestra cuántos de esos registros también tienen finalidad ausente o incorrecta, lo que implica doble error: ruta y finalidad.
+      </div>
       <table style="width:100%;border-collapse:collapse;font-size:10.5px">
         <thead><tr style="background:#F8F5FF;border-bottom:2px solid #DDD6FE">
-          <th style="padding:6px 12px;text-align:left;font-size:9px;font-weight:700;color:#6B21A8;text-transform:uppercase;letter-spacing:.05em">Ruta</th>
-          <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em">Registros</th>
-          <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em">Sin finalidad</th>
-          <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em">Estado</th>
+          <th style="padding:6px 12px;text-align:left;font-size:9px;font-weight:700;color:#6B21A8;text-transform:uppercase;letter-spacing:.05em">Ruta detectada (por CIE-10)</th>
+          <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em">Registros en ruta</th>
+          <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em">Sin finalidad correcta</th>
+          <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em">Acción requerida</th>
         </tr></thead>
         <tbody>`;
+    const RUTA_ACCION={'EMBARAZADA':'Verificar registro bajo Ruta Materna y corregir finalidad (cód. 21-23).','PRECONCEPCIONAL':'Verificar registro bajo Ruta Preconcepcional y corregir finalidad.','PLANIFICACION':'Paciente clasificado en Planificación Familiar por DX. Si corresponde, registrar bajo esa ruta. Si no, corregir el código diagnóstico.','DM':'Paciente con DX de Diabetes Mellitus. Registrar bajo Ruta RCV-DM o corregir diagnóstico.','HIPERTENSION':'Paciente con DX de Hipertensión. Registrar bajo Ruta RCV-HTA o corregir diagnóstico.'};
     for(const ruta of rutasConDatos){
       const{conRuta,sinFin}=rutaResumen[ruta];
       const pct=conRuta>0?Math.round(sinFin/conRuta*100):0;
       html+=`<tr style="border-bottom:1px solid #F3F4F6;background:${sinFin>0?'#FFFBEB':'white'}">
         <td style="padding:7px 12px;font-weight:700;color:#4C1D95">${RLBL[ruta]||ruta}</td>
-        <td style="padding:7px 10px;text-align:center;color:#374151">${conRuta.toLocaleString('es-CO')}</td>
-        <td style="padding:7px 10px;text-align:center;font-weight:700;color:${sinFin>0?'#DC2626':'#059669'}">${sinFin>0?sinFin.toLocaleString('es-CO')+' ('+pct+'%)':'0 — OK'}</td>
-        <td style="padding:7px 10px;text-align:center">
-          ${sinFin>0?`<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700">⚠️ Requiere corrección</span>`:`<span style="background:#D1FAE5;color:#065F46;padding:2px 8px;border-radius:4px;font-size:9px;font-weight:700">✅ Correcto</span>`}
-        </td>
+        <td style="padding:7px 10px;text-align:center;color:#374151;font-weight:600">${conRuta.toLocaleString('es-CO')}</td>
+        <td style="padding:7px 10px;text-align:center;font-weight:700;color:${sinFin>0?'#DC2626':'#059669'}">${sinFin>0?sinFin.toLocaleString('es-CO')+' ('+pct+'%)':'— Correcto'}</td>
+        <td style="padding:7px 12px;font-size:9px;color:#374151">${RUTA_ACCION[ruta]||'Revisar registro y corregir en el sistema de información.'}</td>
       </tr>`;
     }
     html+=`</tbody></table></div>`;
@@ -2450,11 +2456,14 @@ function imprimirAuditoria(){
   // Recoger notas
   const notas=[];
   body.querySelectorAll('textarea[id^="nota_"]').forEach(t=>{
-    if(t.value.trim()) notas.push({ruta:t.id.replace('nota_',''),nota:t.value.trim()});
+    if(t.value.trim()) notas.push({id:t.id,nota:t.value.trim()});
   });
-  const win=window.open('','_blank','width=900,height=700');
-  const prestNom=document.getElementById('sel-prestador')?.selectedOptions?.[0]?.text||'';
-  const fechaRep=new Date().toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'});
+  const win=window.open('','_blank','width=950,height=750');
+  if(!win){alert('El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio e intenta de nuevo.');return;}
+  const st=window._auditStats||{};
+  const prestNom=st.prestador||document.getElementById('sel-prestador')?.selectedOptions?.[0]?.text||'';
+  const fechaRep=st.fecha||new Date().toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'});
+  const gTA=st.total||0, gB=st.bien||0, gM=st.mal||0;
   // Limpiar el HTML del modal: quitar botones, textareas y cursor:pointer
   const contenido=body.innerHTML
     .replace(/<textarea[\s\S]*?<\/textarea>/gi,'')
@@ -2504,6 +2513,7 @@ function imprimirAuditoria(){
     .est-mal{display:inline-block;background:#FEE2E2;color:#991B1B;padding:1px 6px;border-radius:3px;font-size:8px;font-weight:700}
     .est-rc{display:inline-block;background:#FEF3C7;color:#92400E;padding:1px 6px;border-radius:3px;font-size:8px;font-weight:700}
     .nota-box{background:#FFFBEB;border:1px solid #FCD34D;padding:5px 10px;font-size:9px;margin-top:4px;border-radius:4px}
+    .metodologia{background:#F0F9FF;border:1px solid #BAE6FD;border-left:4px solid #0284C7;padding:7px 12px;font-size:9px;color:#0C4A6E;margin-bottom:14px;border-radius:0 4px 4px 0;line-height:1.5}
     @page{size:A4 portrait;margin:8mm 7mm}
     @media print{
       body{font-size:9px}
@@ -2516,12 +2526,15 @@ function imprimirAuditoria(){
       <div class="print-header-title">Reporte de Auditoría — Resolución 3280 de 2018</div>
       <div class="print-header-sub">DUSAKAWI EPSI · Seguimiento de metas · ${prestNom?'Prestador: '+prestNom:''}</div>
       <div class="print-badges">
-        <span class="badge badge-total">${gTotalActs} actividades</span>
-        <span class="badge badge-ok">${gBien} correctas</span>
-        ${gMal>0?`<span class="badge badge-mal">${gMal} con problemas</span>`:''}
+        <span class="badge badge-total">${gTA} actividades evaluadas</span>
+        <span class="badge badge-ok">${gB} correctas</span>
+        ${gM>0?`<span class="badge badge-mal">${gM} con problemas</span>`:''}
       </div>
     </div>
     <div class="print-header-meta">Fecha: ${fechaRep}<br>Norma: Res. 3280/2018 · Res. 948/2026</div>
+  </div>
+  <div class="metodologia">
+    <b>Metodología de detección:</b> Las rutas cruzadas (Embarazada, Preconcepcional, Planificación Familiar, DM, HTA) se identifican mediante el <b>código diagnóstico CIE-10</b> registrado en el RIPS, no por el campo de finalidad. El campo "Sin finalidad" indica registros en los que además de la ruta cruzada, el código de finalidad está ausente o es incorrecto según el Anexo técnico de la Res. 3280/2018.
   </div>
   ${contenido}`);
   if(notas.length){
@@ -2530,7 +2543,7 @@ function imprimirAuditoria(){
   }
   win.document.write(`</body></html>`);
   win.document.close();
-  win.print();
+  setTimeout(()=>win.print(),400);
 }
 
 function renderPreeval(d){
