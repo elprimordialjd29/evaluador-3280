@@ -2646,11 +2646,10 @@ async function exportarPacientesError(btn){
 }
 function imprimirAuditoria(){
   if(!_preevalDatos) return;
-  const body=document.getElementById('audit-modal-body');
-  if(!body) return;
-  // Recoger notas
+  // Recoger notas del modal si está abierto
   const notas=[];
-  body.querySelectorAll('textarea[id^="nota_"]').forEach(t=>{
+  const body=document.getElementById('audit-modal-body');
+  if(body) body.querySelectorAll('textarea[id^="nota_"]').forEach(t=>{
     if(t.value.trim()) notas.push({prog:t.id.replace('nota_prog_',''),nota:t.value.trim()});
   });
   const win=window.open('','_blank','width=1000,height=800');
@@ -2667,93 +2666,222 @@ function imprimirAuditoria(){
   const CAT_ORDER=[['📋 Cursos de Vida',['PRIMERA_INFANCIA','INFANCIA','ADOLESCENCIA','JOVENES','ADULTEZ','VEJEZ']],['🤰 Ruta Materna',['RUTA_MATERNA_PRECONCEPCION','RUTA_MATERNA_IVE','RUTA_MATERNA_PRENATAL','RUTA_MATERNA_PARTO','RUTA_MATERNA_POSPARTO']],['🔁 Demanda Inducida',Object.keys(d.resultados||{}).filter(p=>p.startsWith('DI'))],['❤️ RCV',['RCV_RIESGO','RCV_DM','RCV_DM_HTA']]];
   const RUTA_ACCION_P={'EMBARAZADA':'Verificar registro bajo Ruta Materna y corregir finalidad (cód. 21–23).','PRECONCEPCIONAL':'Verificar registro bajo Ruta Preconcepcional y corregir finalidad.','PLANIFICACION':'Paciente con DX de Planificación Familiar. Registrar bajo esa ruta o corregir diagnóstico.','DM':'Paciente con DX de Diabetes. Registrar bajo Ruta RCV-DM o corregir diagnóstico.','HIPERTENSION':'Paciente con DX de Hipertensión. Registrar bajo Ruta RCV-HTA o corregir diagnóstico.'};
 
-  // ── Construir HTML del cuerpo desde datos (sin copiar modal) ────────────
+  // ── Helper: calcular conteoFin (misma lógica que modal) ─────────────────
+  const FIN_FK={'consultas':'finalidadTecnologiaSalud','procedimientos':'finalidadTecnologiaSalud','medicamentos':'','otrosServicios':''};
+  function calcConteoFin(act){
+    const conteo={};
+    if(!(window._resultCupsGlobal&&window._resultFinGlobal&&window._rkRecord)) return conteo;
+    if(!(act.cups&&act.grupos&&act.finalidades)) return conteo;
+    const fk=FIN_FK[act.archivo]||'';
+    const sinFinRKs=new Set();
+    for(const grp of act.grupos){
+      const cupsMap=(window._resultCupsGlobal[act.archivo]||{})[grp]||{};
+      const finMap=(window._resultFinGlobal[act.archivo]||{})[grp]||{};
+      for(const cup of act.cups){
+        const allRKs=cupsMap[cup.toUpperCase()]||new Set();
+        const conFinRKs=new Set();
+        for(const fin of act.finalidades){const ck=cup.toUpperCase()+'|'+fin;for(const rk of(finMap[ck]||new Set()))conFinRKs.add(rk);}
+        for(const rk of allRKs){if(!conFinRKs.has(rk))sinFinRKs.add(rk);}
+      }
+    }
+    const rkRec=window._rkRecord[act.archivo]||{};
+    for(const rk of sinFinRKs){
+      const r=rkRec[rk]; if(!r) continue;
+      const finVal=fk?String(r[fk]||'').trim():'';
+      const k=finVal||'(sin finalidad)';
+      conteo[k]=(conteo[k]||0)+1;
+    }
+    return conteo;
+  }
+
+  // ── 1. TABLA RESUMEN POR PROGRAMA ────────────────────────────────────────
+  const EDAD_RNG={'PRIMERA_INFANCIA':'0–5 años','INFANCIA':'6–11 años','ADOLESCENCIA':'12–17 años','JOVENES':'18–26 años','ADULTEZ':'27–59 años','VEJEZ':'≥60 años','RUTA_MATERNA_PRECONCEPCION':'Preconcepción','RUTA_MATERNA_IVE':'IVE','RUTA_MATERNA_PRENATAL':'Prenatal','RUTA_MATERNA_PARTO':'Parto','RUTA_MATERNA_POSPARTO':'Posparto'};
+  let htmlResumen=`<div class="resumen-blk">
+    <div class="resumen-hdr">RESUMEN POR PROGRAMA</div>
+    <table class="resumen-tbl">
+      <thead><tr>
+        <th style="width:30%">Programa</th>
+        <th style="width:18%">Rango etario</th>
+        <th style="width:14%;text-align:center">Total reg.</th>
+        <th style="width:14%;text-align:center">Error finalidad</th>
+        <th style="width:24%;text-align:center">Estado</th>
+      </tr></thead><tbody>`;
+  let prevCatR='';
+  for(const[catLabel,progIds] of CAT_ORDER){
+    const progsEnCat=progIds.filter(p=>d.resultados?.[p]);
+    if(!progsEnCat.length) continue;
+    if(catLabel!==prevCatR){
+      const catColor={'📋 Cursos de Vida':'#1E40AF','🤰 Ruta Materna':'#9D174D','🔁 Demanda Inducida':'#065F46','❤️ RCV':'#92400E'}[catLabel]||'#374151';
+      htmlResumen+=`<tr><td colspan="5" style="background:${catColor};color:#fff;font-weight:800;font-size:8pt;padding:3pt 8pt;text-transform:uppercase;letter-spacing:.06em">${catLabel}</td></tr>`;
+      prevCatR=catLabel;
+    }
+    for(const prog of progsEnCat){
+      const datos=d.resultados[prog]||{};
+      const acts=Object.values(datos.actividades||{});
+      const totalReg=acts.reduce((s,a)=>s+(a.encontrados||0),0);
+      const sinFin=acts.reduce((s,a)=>s+(a.tiene_finalidad?Math.max(0,(a.encontrados||0)-(a.encontrados_fin||0)):0),0);
+      const ok=sinFin===0;
+      htmlResumen+=`<tr style="background:${ok?'#F0FDF4':'#FFF5F5'}">
+        <td style="padding:3pt 8pt;font-weight:600">${PROG_LBL_P[prog]||prog}</td>
+        <td style="padding:3pt 8pt;color:#555">${EDAD_RNG[prog]||''}</td>
+        <td style="padding:3pt 8pt;text-align:center;font-weight:700">${totalReg.toLocaleString('es-CO')}</td>
+        <td style="padding:3pt 8pt;text-align:center;font-weight:800;color:${ok?'#166534':'#991B1B'}">${sinFin>0?sinFin.toLocaleString('es-CO'):'0'}</td>
+        <td style="padding:3pt 8pt;text-align:center">
+          ${ok?'<span class="est-ok">✔ OK</span>':'<span class="est-mal">⚠ Revisar</span>'}
+        </td>
+      </tr>`;
+    }
+  }
+  htmlResumen+='</tbody></table></div>';
+
+  // ── 2. RUTAS CRUZADAS GLOBALES (ruta_audit={RUTA:count}, ruta_sin_fin={RUTA:count}) ──
+  const rutasGlobal={};
+  const rutasOrdenP=['EMBARAZADA','PRECONCEPCIONAL','PLANIFICACION','DM','HIPERTENSION'];
+  const RUTA_LBL_FULL={'EMBARAZADA':'🤰 Embarazada','PRECONCEPCIONAL':'📋 Preconcepcional','PLANIFICACION':'📅 Planificación Familiar','DM':'💊 Diabetes Mellitus','HIPERTENSION':'💓 Hipertensión'};
+  for(const[,datos] of Object.entries(d.resultados||{})){
+    for(const[,act] of Object.entries(datos.actividades||{})){
+      if(!act.ruta_audit) continue;
+      for(const[ruta,cr] of Object.entries(act.ruta_audit)){
+        const sf=(act.ruta_sin_fin&&act.ruta_sin_fin[ruta])||0;
+        if(!rutasGlobal[ruta]) rutasGlobal[ruta]={conRuta:0,sinFin:0};
+        rutasGlobal[ruta].conRuta+=cr; rutasGlobal[ruta].sinFin+=sf;
+      }
+    }
+  }
+  const rutasConDatosG=rutasOrdenP.filter(r=>rutasGlobal[r]);
+  let htmlRutas='';
+  if(rutasConDatosG.length){
+    htmlRutas=`<div style="margin-bottom:18px;border:1px solid #E2E8F0;border-radius:8px;overflow:hidden">
+      <div style="background:#4C1D95;color:white;padding:8px 14px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Rutas cruzadas detectadas</div>
+      <div style="background:#EEF2FF;border-bottom:1px solid #C7D2FE;padding:7px 14px;font-size:9px;color:#3730A3;line-height:1.5">
+        <b>Nota metodológica:</b> La detección de pacientes en ruta cruzada se realiza por <b>código diagnóstico CIE-10</b> registrado en el RIPS (no por el campo de finalidad). La columna "Sin finalidad" muestra cuántos de esos registros también tienen finalidad ausente o incorrecta, lo que implica doble error: ruta y finalidad.
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:10.5px">
+        <thead><tr style="background:#F8F5FF;border-bottom:2px solid #DDD6FE">
+          <th style="padding:6px 12px;text-align:left;font-size:9px;font-weight:700;color:#6B21A8;text-transform:uppercase;letter-spacing:.05em">Ruta detectada (por CIE-10)</th>
+          <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em">Registros en ruta</th>
+          <th style="padding:6px 10px;text-align:center;font-size:9px;font-weight:700;color:#DC2626;text-transform:uppercase;letter-spacing:.05em">Sin finalidad correcta</th>
+          <th style="padding:6px 10px;text-align:left;font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.05em">Acción requerida</th>
+        </tr></thead><tbody>`;
+    for(const ruta of rutasConDatosG){
+      const{conRuta,sinFin}=rutasGlobal[ruta];
+      const pct=conRuta>0?Math.round(sinFin/conRuta*100):0;
+      htmlRutas+=`<tr style="border-bottom:1px solid #F3F4F6;background:${sinFin>0?'#FFFBEB':'white'}">
+        <td style="padding:7px 12px;font-weight:700;color:#4C1D95">${RUTA_LBL_FULL[ruta]||ruta}</td>
+        <td style="padding:7px 10px;text-align:center;color:#374151;font-weight:600">${conRuta.toLocaleString('es-CO')}</td>
+        <td style="padding:7px 10px;text-align:center;font-weight:700;color:${sinFin>0?'#DC2626':'#059669'}">${sinFin>0?sinFin.toLocaleString('es-CO')+' ('+pct+'%)':'— Correcto'}</td>
+        <td style="padding:7px 12px;font-size:9px;color:#374151">${RUTA_ACCION_P[ruta]||''}</td>
+      </tr>`;
+    }
+    htmlRutas+=`</tbody></table></div>`;
+  }
+
+  // ── 3. DETALLE POR PROGRAMA ──────────────────────────────────────────────
   let html='';
   for(const[catLabel,progIds] of CAT_ORDER){
     const progsEnCat=progIds.filter(p=>d.resultados?.[p]);
     if(!progsEnCat.length) continue;
     const scCls={'📋 Cursos de Vida':'sc-cv','🤰 Ruta Materna':'sc-rm','🔁 Demanda Inducida':'sc-di','❤️ RCV':'sc-rcv'}[catLabel]||'sc-cv';
-    html+=`<div class="sec-cat ${scCls}">${catLabel}</div>`;
+    html+=`<div class="sec-cat ${scCls}">SECCIÓN ${catLabel}</div>`;
     for(const prog of progsEnCat){
       const datos=d.resultados[prog]||{};
       const acts=Object.entries(datos.actividades||{});
-      let totalActs=0,bienActs=0,sinFin=0;
-      acts.forEach(([,a])=>{totalActs++;if(!a.tiene_finalidad||(a.encontrados||0)===(a.encontrados_fin||0))bienActs++;else sinFin+=(a.encontrados||0)-(a.encontrados_fin||0);});
-      const progOK=sinFin===0;
+      const totalReg=acts.reduce((s,[,a])=>s+(a.encontrados||0),0);
+      const sinFinProg=acts.reduce((s,[,a])=>s+(a.tiene_finalidad?Math.max(0,(a.encontrados||0)-(a.encontrados_fin||0)):0),0);
+      const progOK=sinFinProg===0;
       const esDI=prog.startsWith('DI');
       const pLabel=PROG_LBL_P[prog]||prog;
       html+=`<div class="pblock">
         <div class="phead ${progOK?'phead-ok':'phead-mal'}">
           <div><span class="pname">${pLabel}</span></div>
           <div class="pstats">
-            <span>${totalActs} actividades</span>
+            <span>Total registros: <b>${totalReg.toLocaleString('es-CO')}</b></span>
             <span class="sep">|</span>
-            <span>${progOK?'✔ Sin errores':'✘ '+sinFin.toLocaleString('es-CO')+' sin finalidad correcta'}</span>
+            <span>${progOK?'✔ Sin errores de finalidad':'✘ '+sinFinProg.toLocaleString('es-CO')+' sin finalidad correcta'}</span>
           </div>
         </div>
         <table>
           <thead><tr>
-            <th style="width:42%">Descripción CUPS</th>
-            <th style="width:8%;text-align:center">Meta</th>
-            <th style="width:10%;text-align:center">Conciliada</th>
-            <th style="width:9%;text-align:center">Discord.</th>
+            <th style="width:38%">Descripción CUPS</th>
+            <th style="width:7%;text-align:center">Meta</th>
+            <th style="width:9%;text-align:center">Conciliada</th>
+            <th style="width:8%;text-align:center">Discord.</th>
             <th style="width:7%;text-align:center">% Cumpl.</th>
-            <th style="width:24%">Finalidad / Estado</th>
+            <th style="width:31%">Finalidad requerida / Estado</th>
           </tr></thead>
           <tbody>`;
       for(const[aid,act] of acts){
         const metaObj=(S.metas?.[prog]?.[aid])||(_metas_ips?.[prog]?.[aid])||null;
         const metaVal=metaObj?+(metaObj.meta||metaObj)||0:0;
-        const found=act.tiene_finalidad?(act.encontrados_fin||0):(act.encontrados||0);
-        const disc=metaVal>0?metaVal-found:((act.encontrados||0)-(act.encontrados_fin||0));
+        const nVal=(window._pacientesValidados?.[aid]||new Set()).size;
+        const found=(act.tiene_finalidad?(act.encontrados_fin||0):(act.encontrados||0))+nVal;
+        const disc=metaVal>0?Math.max(0,metaVal-found):Math.max(0,(act.encontrados||0)-(act.encontrados_fin||0));
         const pct=metaVal>0?Math.round(found/metaVal*100):null;
         const pctStr=pct!==null?(pct+'%'):'—';
         const actErr=act.tiene_finalidad&&(act.encontrados||0)>(act.encontrados_fin||0);
-        const fins=(act.finalidades||[]).map(f=>`${f}${FIN_LBL_P[f]?' – '+FIN_LBL_P[f]:''}`).join('<br>');
-        html+=`<tr class="${actErr?'row-mal':''}">
-          <td>${act.descripcion||aid}<br><small class="arch-lbl">${act.archivo||''}</small></td>
-          <td class="num">${metaVal>0?metaVal.toLocaleString('es-CO'):'—'}</td>
-          <td class="num">${found.toLocaleString('es-CO')}</td>
+        const hayRutasAct=!esDI&&!!(act.ruta_audit&&Object.keys(act.ruta_audit).length);
+        const sinRegs=(act.encontrados||0)===0&&!hayRutasAct;
+        const fins=(act.finalidades||[]).map(f=>`${f}${FIN_LBL_P[f]?' – '+FIN_LBL_P[f]:''}`).join(', ');
+        const rowBg=actErr?'#FFF5F5':hayRutasAct?'#FFFBEB':'white';
+        html+=`<tr style="background:${rowBg}" class="${actErr?'row-mal':''}">
+          <td>${act.descripcion||aid}<br><small class="arch-lbl">${act.archivo||''}${sinRegs?' · Sin registros':''}</small></td>
+          <td class="num" style="color:${metaVal>0?'#1d4ed8':'#9CA3AF'}">${metaVal>0?metaVal.toLocaleString('es-CO'):'—'}</td>
+          <td class="num" style="color:${found>0?'#059669':'#9CA3AF'}">${sinRegs?'—':found.toLocaleString('es-CO')}${nVal>0?`<br><small style="color:#166534">+${nVal}</small>`:''}</td>
           <td class="num ${disc>0?'disc':''}">${disc>0?'−'+disc.toLocaleString('es-CO'):'0'}</td>
-          <td class="num ${pct!==null?(pct<70?'pct-low':pct<100?'pct-mid':'pct-ok'):''}"><b>${pctStr}</b></td>
-          <td class="fin-cell">${fins||'—'}</td>
+          <td class="num ${pct!==null?(pct<70?'pct-low':pct<100?'pct-mid':'pct-ok'):''}">${sinRegs?'—':`<b>${pctStr}</b>`}</td>
+          <td class="fin-cell">${fins||'—'}${actErr?'<br><span class="lbl-err">⚠ Error finalidad</span>':hayRutasAct?'<br><span class="lbl-rc">↔ Ruta cruzada</span>':''}</td>
         </tr>`;
-      }
-      html+='</tbody></table>';
-      // Rutas cruzadas (solo si no es DI)
-      if(!esDI){
-        const rutasMap={};
-        acts.forEach(([,a])=>{
-          if(!a.ruta_audit) return;
-          for(const[ruta,info] of Object.entries(a.ruta_audit)){
-            if(!rutasMap[ruta]) rutasMap[ruta]={total:0,sinFin:0};
-            rutasMap[ruta].total+=(info.total||0);
-            rutasMap[ruta].sinFin+=(info.sin_finalidad||0);
+        // Sub-tabla detalle de errores
+        if(actErr){
+          const conteo=calcConteoFin(act);
+          const finReq=(act.finalidades||[]).map(f=>`${f}${FIN_LBL_P[f]?' – '+FIN_LBL_P[f]:''}`).join(' / ');
+          if(Object.keys(conteo).length){
+            html+=`<tr class="err-det-row"><td colspan="6" style="padding:0 0 4pt 18pt;background:#FFF8F8">
+              <div class="err-det-title">Detalle de errores de finalidad:</div>
+              <table class="err-tbl">
+                <thead><tr>
+                  <th>Finalidad registrada</th>
+                  <th style="text-align:center">Cant.</th>
+                  <th>Finalidad requerida</th>
+                  <th>Tipo de error</th>
+                  <th>A corregir</th>
+                </tr></thead><tbody>`;
+            for(const[finReg,cnt] of Object.entries(conteo).sort((a,b)=>b[1]-a[1])){
+              const esSF=finReg==='(sin finalidad)';
+              const FIN_LBL_P2={'01':'Diagnóstico y tratamiento','05':'Detección temprana','09':'Protección específica','10':'IEC','11':'Rehabilitación','12':'Salud oral','13':'Vacunación','14':'Crec. y desarrollo','15':'Med. alternativa','17':'Micronutrientes','18':'PF – Promoción','19':'PF – Consulta','20':'PF – Procedimiento','21':'Control prenatal','22':'Atención del parto','23':'Posparto','24':'Urgencias','25':'Recién nacido','26':'Terapia resp.','27':'Hemoterapia','30':'Otro'};
+              const finDesc=esSF?'Sin código de finalidad':`${finReg}${FIN_LBL_P2[finReg]?' – '+FIN_LBL_P2[finReg]:''}`;
+              const tipo=esSF?'Sin finalidad registrada':'Finalidad incorrecta';
+              const corregir=esSF?`Campo vacío. Registre: ${finReq||'—'} (Res. 3280/2018)`:`Cambie a: ${finReq||'—'} (Res. 3280/2018)`;
+              html+=`<tr style="border-bottom:1px solid #FEF2F2">
+                <td style="padding:4px 8px;color:#991B1B">${finDesc}</td>
+                <td style="padding:4px 6px;text-align:center;font-weight:700;color:#DC2626">${cnt}</td>
+                <td style="padding:4px 8px;color:#065F46;font-weight:600">${finReq||'—'}</td>
+                <td style="padding:4px 8px;color:#374151">${tipo}</td>
+                <td style="padding:4px 8px;color:#374151;font-size:9px">${corregir}</td>
+              </tr>`;
+            }
+            html+='</tbody></table></td></tr>';
           }
-        });
-        if(Object.keys(rutasMap).length){
-          html+=`<table class="rc-tbl">
-            <thead><tr>
-              <th>Ruta cruzada (CIE-10)</th>
-              <th style="text-align:center">Registros</th>
-              <th style="text-align:center">Sin finalidad</th>
-              <th>Acción requerida</th>
-            </tr></thead><tbody>`;
-          for(const[ruta,inf] of Object.entries(rutasMap)){
-            html+=`<tr class="rc-row">
-              <td><b>${ruta}</b></td>
-              <td class="num">${inf.total}</td>
-              <td class="num ${inf.sinFin>0?'disc':''}">${inf.sinFin}</td>
-              <td>${RUTA_ACCION_P[ruta]||''}</td>
+        }
+        // Sub-filas rutas cruzadas por actividad (ruta_audit={RUTA:count}, ruta_sin_fin={RUTA:count})
+        if(hayRutasAct&&act.ruta_audit){
+          for(const[ruta,cr] of Object.entries(act.ruta_audit)){
+            const rutaSf=(act.ruta_sin_fin&&act.ruta_sin_fin[ruta])||0;
+            html+=`<tr style="border-bottom:1px solid #FDE68A;background:#FFFBEB">
+              <td style="padding:5px 10px 5px 26px;font-size:9.5px">
+                <span style="color:#92400E;font-weight:700">${RUTA_LBL_FULL[ruta]||ruta}</span>
+                <span style="color:#6B7280;margin-left:6px">${(typeof cr==='number'?cr:0).toLocaleString('es-CO')} registros de pacientes de otra ruta</span>
+                ${rutaSf>0?`<span style="color:#DC2626;font-weight:700;margin-left:6px">· ⚠️ ${rutaSf} también con finalidad incorrecta</span>`:'<span style="color:#059669;margin-left:6px">· ✅ Finalidad correcta</span>'}
+              </td>
+              <td colspan="5" style="padding:5px 8px;font-size:9px;color:#6B7280">Ruta cruzada</td>
             </tr>`;
           }
-          html+='</tbody></table>';
         }
       }
-      // Nota
+      html+='</tbody></table>';
       const notaProg=notas.find(n=>n.prog===prog);
-      if(notaProg) html+=`<div class="nota-box"><b>Nota:</b> ${notaProg.nota}</div>`;
-      html+='</div>'; // cierra pblock
+      if(notaProg) html+=`<div class="nota-box"><b>Nota (${pLabel}):</b> ${notaProg.nota}</div>`;
+      html+='</div>';
     }
   }
 
@@ -2847,6 +2975,8 @@ function imprimirAuditoria(){
     <div class="hdr-meta"><b>${fechaRep}</b><br>Res. 3280/2018 · Res. 948/2026</div>
   </div>
   <div class="metodol"><b>Metodología:</b> Las rutas cruzadas se identifican por <b>código CIE-10</b>, no por el campo de finalidad. "Sin finalidad" = código ausente o incorrecto según Anexo técnico Res. 3280/2018.</div>
+  ${htmlResumen}
+  ${htmlRutas}
   ${html}
   <div class="footer">
     <span>DUSAKAWI EPSI · Auditoría Res. 3280/2018</span>
