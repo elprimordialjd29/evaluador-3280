@@ -2118,8 +2118,26 @@ function _cerrarValidarPacientes(){
   document.getElementById('modalValidarPacientes').style.display='none';
   if(window._validarPacientesDesdeAuditoria){
     window._validarPacientesDesdeAuditoria=false;
+    const scrollAntes=window._auditScrollPos||0;
     abrirModalAuditoria();
+    // Restaurar posición de scroll tras re-render
+    const ab=document.getElementById('audit-modal-body');
+    if(ab) requestAnimationFrame(()=>requestAnimationFrame(()=>{ ab.scrollTop=scrollAntes; }));
   }
+}
+
+function _mostrarToastValidado(n){
+  let t=document.getElementById('_toast-validado');
+  if(!t){
+    t=document.createElement('div');
+    t.id='_toast-validado';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#166534;color:#fff;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .2s';
+    document.body.appendChild(t);
+  }
+  t.textContent=`✓ ${n} paciente${n!==1?'s':''} incluido${n!==1?'s':''} en el conteo`;
+  t.style.opacity='1';
+  clearTimeout(t._to);
+  t._to=setTimeout(()=>{t.style.opacity='0';},2800);
 }
 
 function _guardarValidados(){
@@ -2127,9 +2145,16 @@ function _guardarValidados(){
   const checks=document.querySelectorAll('#mvpTabla input[type=checkbox]');
   const sel=new Set();
   checks.forEach(c=>{if(c.checked) sel.add(c.dataset.rk);});
+  const n=sel.size;
   window._pacientesValidados[aid]=sel;
+  // Guardar posición de scroll del modal de auditoría antes de cerrar
+  const auditBody=document.getElementById('audit-modal-body');
+  const scrollY=auditBody?auditBody.scrollTop:0;
   _cerrarValidarPacientes();
   if(_preevalDatos) renderPreeval(_preevalDatos);
+  // Restaurar scroll y mostrar toast
+  if(auditBody) requestAnimationFrame(()=>{ auditBody.scrollTop=scrollY; });
+  if(n>0) _mostrarToastValidado(n);
 }
 
 function _seleccionarTodosValidar(v){
@@ -2421,7 +2446,7 @@ function abrirModalAuditoria(){
             <td style="padding:4px 8px;color:#374151">${errTipo}</td>
             <td style="padding:4px 8px;color:#374151;font-size:9px">${corregir}</td>
             <td style="padding:4px 6px">
-              <button onclick="cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}')"
+              <button onclick="window._auditScrollPos=document.getElementById('audit-modal-body').scrollTop;cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}')"
                 style="padding:2px 7px;border-radius:4px;border:1.5px solid #7C3AED;background:#F5F3FF;color:#5B21B6;font-size:8.5px;font-weight:700;cursor:pointer;white-space:nowrap">
                 👥 Ver pacientes</button>
             </td>
@@ -2441,7 +2466,7 @@ function abrirModalAuditoria(){
             </td>
             <td colspan="4" style="padding:5px 8px;font-size:9px;color:#6B7280">Ruta cruzada</td>
             <td style="padding:5px 8px;text-align:center">
-              <button onclick="cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}','${ruta}')"
+              <button onclick="window._auditScrollPos=document.getElementById('audit-modal-body').scrollTop;cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}','${ruta}')"
                 style="padding:2px 7px;border-radius:4px;border:1.5px solid #92400E;background:#FFFBEB;color:#92400E;font-size:8.5px;font-weight:700;cursor:pointer;white-space:nowrap">
                 👥 Ver pacientes</button>
             </td>
