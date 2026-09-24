@@ -2807,12 +2807,17 @@ function imprimirAuditoria(){
     .footer{margin-top:8pt;border-top:1pt solid #CBD5E1;padding-top:3pt;font-size:7pt;color:#64748B;display:flex;justify-content:space-between}
     /* ── Sin @page size fijo → se adapta al papel seleccionado ── */
     @page{margin:10mm 8mm}
+    /* Forzar impresión de colores de fondo en todos los navegadores */
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
     @media print{
       body{padding:0;font-size:8.5pt}
-      .pblock{page-break-inside:avoid}
-      thead{display:table-header-group}
-      tr{page-break-inside:avoid}
-      /* En impresión B&N el franja izquierda y fondo bastan para distinguir */
+      /* NO evitar salto dentro del bloque completo (causaba páginas con espacio vacío)
+         Solo el encabezado del programa y la primera fila quedan juntos */
+      .pblock{page-break-inside:auto;break-inside:auto}
+      .phead{page-break-after:avoid;break-after:avoid}
+      thead{display:table-header-group;page-break-inside:avoid}
+      tr{page-break-inside:avoid;break-inside:avoid}
+      /* En impresión B&N el franja izquierda y fondo gris bastan para distinguir */
       .row-mal{background:#EBEBEB!important}
       .footer{position:fixed;bottom:0;left:0;right:0;padding:2mm 8mm;background:#fff}
     }`;
