@@ -1082,6 +1082,123 @@ def get_actas():
         actas = [a for a in actas if a.get("ips_id") == ips_id]
     return jsonify({"actas": actas})
 
+@app.route("/api/preeval/exportar-errores", methods=["POST"])
+@login_required
+def preeval_exportar_errores():
+    """Genera Excel con pacientes que tienen errores de finalidad, por programa."""
+    import io
+    from openpyxl import Workbook
+    from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    body = request.get_json() or {}
+    programas = body.get("programas", [])
+    prestador = body.get("prestador_nombre", "")
+    fecha = body.get("fecha", datetime.datetime.now().strftime("%Y-%m-%d"))
+
+    wb = Workbook()
+    wb.remove(wb.active)  # quitar hoja vacía inicial
+
+    thin = Side(style="thin", color="CCCCCC")
+    bord = Border(left=thin, right=thin, top=thin, bottom=thin)
+    CAT_COLORS = {"Cursos de Vida": "1E40AF", "Ruta Materna": "9D174D",
+                  "Demanda Inducida": "065F46", "RCV": "92400E"}
+    HEADERS = ["N°","Tipo Doc","Núm. Doc","Edad","Sexo","Fecha Atención",
+               "Código Dx","Programa","CUPS","Descripción actividad",
+               "Finalidad registrada","Finalidad requerida","Tipo de error","Acción correctiva"]
+    COL_WIDTHS = [5, 10, 16, 6, 6, 16, 12, 22, 14, 45, 30, 30, 22, 40]
+
+    # Agrupar por categoría
+    cat_sheets = {}
+    for prog in programas:
+        cat = prog.get("categoria", "Otros")
+        cat_sheets.setdefault(cat, []).append(prog)
+
+    cat_order = ["Cursos de Vida", "Ruta Materna", "Demanda Inducida", "RCV", "Otros"]
+    for cat in cat_order:
+        if cat not in cat_sheets:
+            continue
+        ws = wb.create_sheet(title=cat[:31])
+        fill_hdr = PatternFill("solid", fgColor=CAT_COLORS.get(cat, "374151"))
+        fill_prog = PatternFill("solid", fgColor="DBEAFE")
+        fill_err = PatternFill("solid", fgColor="FEF2F2")
+
+        # Título
+        ws.merge_cells(f"A1:{get_column_letter(len(HEADERS))}1")
+        ws["A1"] = f"Pacientes con errores de finalidad — {cat} | {prestador} | {fecha}"
+        ws["A1"].font = Font(bold=True, size=12, color="FFFFFF")
+        ws["A1"].fill = fill_hdr
+        ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+        ws.row_dimensions[1].height = 20
+
+        # Subtítulo norma
+        ws.merge_cells(f"A2:{get_column_letter(len(HEADERS))}2")
+        ws["A2"] = "Resolución 3280 de 2018 / Resolución 948 de 2026 — DUSAKAWI EPSI"
+        ws["A2"].font = Font(italic=True, size=9, color="374151")
+        ws["A2"].alignment = Alignment(horizontal="center")
+
+        # Encabezados
+        for col, (h, w) in enumerate(zip(HEADERS, COL_WIDTHS), 1):
+            c = ws.cell(row=3, column=col, value=h)
+            c.font = Font(bold=True, size=9, color="FFFFFF")
+            c.fill = PatternFill("solid", fgColor="1E3A5F")
+            c.alignment = Alignment(horizontal="center", wrap_text=True)
+            c.border = bord
+            ws.column_dimensions[get_column_letter(col)].width = w
+        ws.row_dimensions[3].height = 22
+
+        row = 4
+        n = 0
+        for prog in cat_sheets[cat]:
+            pnom = prog.get("nombre", prog.get("id", ""))
+            for act in prog.get("actividades", []):
+                desc = act.get("descripcion", "")
+                cups = act.get("cups", "")
+                fin_req = act.get("finalidadRequerida", "")
+                for pac in act.get("pacientes", []):
+                    n += 1
+                    vals = [
+                        n,
+                        pac.get("tipoDoc",""),
+                        pac.get("numDoc",""),
+                        pac.get("edad",""),
+                        pac.get("sexo",""),
+                        pac.get("fechaAtencion",""),
+                        pac.get("dx",""),
+                        pnom,
+                        cups,
+                        desc,
+                        pac.get("finalidadRegistrada",""),
+                        fin_req,
+                        pac.get("tipoError",""),
+                        pac.get("aCorregir",""),
+                    ]
+                    bg = fill_err if pac.get("tipoError","")!="" else PatternFill()
+                    for col, v in enumerate(vals, 1):
+                        c = ws.cell(row=row, column=col, value=v)
+                        c.font = Font(size=9)
+                        c.border = bord
+                        c.alignment = Alignment(wrap_text=(col in (10,14)), vertical="top")
+                        if col >= 11:
+                            c.fill = bg
+                    ws.row_dimensions[row].height = 14
+                    row += 1
+
+        # Congelar paneles
+        ws.freeze_panes = "A4"
+
+    if not wb.sheetnames:
+        wb.create_sheet("Sin errores")
+        wb.active["A1"] = "No se encontraron pacientes con errores de finalidad."
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    fname = f"Pacientes_Error_Finalidad_{fecha}.xlsx"
+    return send_file(buf, as_attachment=True, download_name=fname,
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
 @app.route("/api/actas", methods=["POST"])
 @login_required
 def create_acta():
