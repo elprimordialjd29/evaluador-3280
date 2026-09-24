@@ -2285,9 +2285,11 @@ function abrirModalAuditoria(){
     const progConFin=progActs.reduce((s,a)=>s+(a.tiene_finalidad?(a.encontrados_fin||0):0),0);
     const progTotal=progActs.reduce((s,a)=>s+(a.encontrados||0),0);
     const progOK=progSinFin===0;
+    // En Demanda Inducida la ruta cruzada es intencional — no se reporta como error
+    const esDI=prog.startsWith('DI');
     // Resumen de errores para este programa
     const progErrTypes=[];
-    const progHayRutasCruz=progActs.some(a=>a.ruta_audit&&Object.keys(a.ruta_audit).length>0);
+    const progHayRutasCruz=!esDI&&progActs.some(a=>a.ruta_audit&&Object.keys(a.ruta_audit).length>0);
     if(progSinFin>0){
       const actsMal=progActs.filter(a=>a.tiene_finalidad&&(a.encontrados||0)-(a.encontrados_fin||0)>0);
       // Agrupar por finalidades requeridas
@@ -2369,8 +2371,8 @@ function abrirModalAuditoria(){
       const disc2=metaVal2>0?Math.max(0,metaVal2-conc2):0;
       const pct2=metaVal2>0?(conc2>=metaVal2?1:conc2/metaVal2):1;
       const pctStr2=pct2>=1?`<span style="color:#059669;font-weight:700">100%</span>`:`<span style="color:${pct2>=0.9?'#D97706':'#DC2626'};font-weight:700">${(pct2*100).toFixed(1)}%</span>`;
-      // Rutas cruzadas
-      const hayRutas=!!(act.ruta_audit&&Object.keys(act.ruta_audit).length);
+      // Rutas cruzadas — se omiten para Demanda Inducida (es su propósito enrutar)
+      const hayRutas=!esDI&&!!(act.ruta_audit&&Object.keys(act.ruta_audit).length);
       const hayRegistros=total>0;
       const sinRegistros=!hayRegistros&&!hayRutas;
       // Fila principal de la actividad
