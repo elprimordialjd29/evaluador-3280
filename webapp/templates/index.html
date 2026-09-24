@@ -235,6 +235,15 @@ html.dark .it-btn.active{color:var(--azul2)}
   .res-header{grid-template-columns:1fr auto}
   .res-col:nth-child(3),.res-col:nth-child(4){display:none}
 }
+@media print{
+  @page{size:A4 landscape;margin:10mm 8mm}
+  body{font-size:9px;background:#fff!important}
+  nav,.sidebar,.tabs-bar,.btn,button,textarea,input,select,.preeval-acciones,#preeval-acciones,.no-print{display:none!important}
+  .preeval-result-body,#preeval-result-body{display:block!important;overflow:visible!important}
+  table{page-break-inside:auto;border-collapse:collapse}
+  tr{page-break-inside:avoid}
+  thead{display:table-header-group}
+}
 </style>
 </head>
 <body>
@@ -2253,13 +2262,13 @@ function abrirModalAuditoria(){
       <div style="overflow-x:auto">
       <table style="width:100%;border-collapse:collapse;font-size:10.5px">
         <thead>
-          <tr style="background:#F9FAFB;border-bottom:2px solid #E5E7EB">
-            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#374151;min-width:230px">Descripción del CUPS</th>
-            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#1d4ed8;white-space:nowrap;min-width:60px">META</th>
-            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#065F46;white-space:nowrap;min-width:80px">ACTIVIDAD<br>CONCILIADA</th>
-            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#92400E;white-space:nowrap;min-width:70px">DISCOR-<br>DANCIA</th>
-            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#5B21B6;white-space:nowrap;min-width:65px">%<br>CUMPL.</th>
-            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#374151;min-width:70px">ESTADO</th>
+          <tr style="background:#F1F5F9;border-bottom:2px solid #CBD5E1">
+            <th style="padding:6px 10px;text-align:left;font-weight:700;color:#374151;font-size:9px;text-transform:uppercase;letter-spacing:.04em">Descripción del CUPS</th>
+            <th style="padding:6px 7px;text-align:center;font-weight:700;color:#1d4ed8;white-space:nowrap;font-size:9px;text-transform:uppercase;letter-spacing:.04em;min-width:50px">Meta</th>
+            <th style="padding:6px 7px;text-align:center;font-weight:700;color:#065F46;white-space:nowrap;font-size:9px;text-transform:uppercase;letter-spacing:.04em;min-width:70px">Conciliada</th>
+            <th style="padding:6px 7px;text-align:center;font-weight:700;color:#92400E;white-space:nowrap;font-size:9px;text-transform:uppercase;letter-spacing:.04em;min-width:65px">Discord.</th>
+            <th style="padding:6px 7px;text-align:center;font-weight:700;color:#5B21B6;white-space:nowrap;font-size:9px;text-transform:uppercase;letter-spacing:.04em;min-width:55px">% Cumpl.</th>
+            <th style="padding:6px 7px;text-align:center;font-weight:700;color:#374151;font-size:9px;text-transform:uppercase;letter-spacing:.04em;min-width:60px">Estado</th>
           </tr>
         </thead>
         <tbody>`;
@@ -2434,7 +2443,16 @@ function imprimirAuditoria(){
     h3{color:#1E40AF;margin:12px 0 4px;font-size:13px;border-bottom:1.5px solid #BFDBFE;padding-bottom:3px}
     .ok{color:#059669}.mal{color:#DC2626;font-weight:700}
     .nota{background:#FFFBEB;border:1px solid #FCD34D;padding:6px 10px;font-size:11px;margin-top:4px;border-radius:4px}
-    @media print{textarea,button{display:none}}</style></head><body>
+    @media print{
+      @page{size:A4 landscape;margin:10mm 8mm}
+      body{font-size:9px}
+      textarea,button,.no-print{display:none!important}
+      table{width:100%;border-collapse:collapse;page-break-inside:auto}
+      tr{page-break-inside:avoid;page-break-after:auto}
+      thead{display:table-header-group}
+      th,td{padding:3px 5px!important;font-size:8.5px!important;border:1px solid #CBD5E1}
+      h2{font-size:13px}h3{font-size:11px}
+    }</style></head><body>
     <h2>📋 Reporte de Auditoría — Resolución 3280</h2>
     <p style="font-size:10px;color:#6B7280;margin:0 0 12px">Generado: ${new Date().toLocaleString('es-CO')}</p>
     ${body.innerHTML.replace(/<textarea[^>]*>[\s\S]*?<\/textarea>/g,'').replace(/<button[^>]*>[\s\S]*?<\/button>/g,'').replace(/style="[^"]*cursor:[^"]*"/g,'')}`);
@@ -2505,18 +2523,10 @@ function renderPreeval(d){
   }
   for(const[seg,progs] of Object.entries(grupos)){
     const col=COLORS[seg]||"#374151";
-    html+=`<div style="margin-bottom:14px">
+    html+=`<div style="margin-bottom:14px;overflow-x:auto">
       <div style="padding:6px 10px;background:${col};color:#fff;border-radius:8px 8px 0 0;font-size:11px;font-weight:700">${seg}</div>
-      <table style="width:100%;border-collapse:collapse;font-size:11px">
-        <thead><tr style="background:var(--gris1)">
-          <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--gris3)">Actividad</th>
-          <th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--gris3)">Archivo</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--gris3)">META</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--gris3)">ACTIVIDAD CONCILIADA</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--gris3)">DISCORDANCIA</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--gris3)">% CUMPLIMIENTO</th>
-          <th style="padding:6px 8px;text-align:center;font-weight:600;color:var(--gris3)" title="Registros con finalidad incorrecta o ausente">Error finalidad</th>
-        </tr></thead><tbody>`;
+      <table style="width:100%;min-width:540px;border-collapse:collapse;font-size:11px">
+        <tbody>`;
     let segTotalFound=0, segTotalSinFin=0;
     for(const[pid,prog] of progs){
       const total=usarFin?(prog.total_fin||0):(prog.total||0);
@@ -2534,15 +2544,14 @@ function renderPreeval(d){
         ?`<span style="margin-left:8px;padding:1px 7px;border-radius:10px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700">+${progSinFin.toLocaleString("es-CO")} sin finalidad</span>`
         :'';
       html+=`<tr style="background:var(--azul4);border-bottom:1px solid var(--gris1)">
-        <td colspan="7" style="padding:5px 8px;font-weight:700;color:var(--azul);font-size:10.5px">${prog.nombre||pid} — Total: ${total.toLocaleString("es-CO")}${sfBadge}</td></tr>
-      <tr style="background:var(--gris0);border-bottom:1px solid var(--gris1)">
-        <th style="padding:3px 8px 3px 16px;text-align:left;font-weight:600;color:var(--gris3);font-size:9.5px">Actividad</th>
-        <th style="padding:3px 8px;text-align:left;font-weight:600;color:var(--gris3);font-size:9.5px">Archivo</th>
-        <th style="padding:3px 8px;text-align:center;font-weight:600;color:var(--gris3);font-size:9.5px">META</th>
-        <th style="padding:3px 8px;text-align:center;font-weight:600;color:var(--gris3);font-size:9.5px">ACTIVIDAD CONCILIADA</th>
-        <th style="padding:3px 8px;text-align:center;font-weight:600;color:var(--gris3);font-size:9.5px">DISCORDANCIA</th>
-        <th style="padding:3px 8px;text-align:center;font-weight:600;color:var(--gris3);font-size:9.5px">% CUMPL.</th>
-        <th style="padding:3px 8px;text-align:center;font-weight:600;color:var(--gris3);font-size:9.5px">Error finalidad</th>
+        <td colspan="6" style="padding:5px 8px;font-weight:700;color:var(--azul);font-size:10.5px">${prog.nombre||pid} — Total: ${total.toLocaleString("es-CO")}${sfBadge}</td></tr>
+      <tr style="background:var(--gris0);border-bottom:2px solid #CBD5E1">
+        <th style="padding:4px 8px 4px 12px;text-align:left;font-weight:700;color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:.04em;width:38%">Descripción del CUPS</th>
+        <th style="padding:4px 6px;text-align:center;font-weight:700;color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:.04em;width:9%">META</th>
+        <th style="padding:4px 6px;text-align:center;font-weight:700;color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:.04em;width:11%">CONCILIADA</th>
+        <th style="padding:4px 6px;text-align:center;font-weight:700;color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:.04em;width:10%">DISCORD.</th>
+        <th style="padding:4px 6px;text-align:center;font-weight:700;color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:.04em;width:8%">% CUMPL.</th>
+        <th style="padding:4px 6px;text-align:center;font-weight:700;color:#475569;font-size:9px;text-transform:uppercase;letter-spacing:.04em;width:24%">FINALIDAD / ACCIONES</th>
       </tr>`;
       for(const[aid,act] of Object.entries(prog.actividades||{})){
         const sinFin=(act.encontrados||0)-(act.encontrados_fin||0);
@@ -2626,14 +2635,14 @@ function renderPreeval(d){
         const disc=metaVal>0?Math.max(0,metaVal-found):0;
         const pctC=metaVal>0?(found>=metaVal?1:found/metaVal):1;
         const pctStr=pctC>=1?'<span style="color:#059669;font-weight:700">100%</span>':`<span style="color:${pctC>=0.9?'#D97706':'#DC2626'};font-weight:700">${(pctC*100).toFixed(1)}%</span>`;
+        const archLbl={'consultas':'Consulta','procedimientos':'Proced.','vacunacion':'Vacuna','urgencias':'Urgencia','hospitalizacion':'Hosp.','medicamentos':'Medic.','recien_nacidos':'R.N.','otros':'Otro'}[act.archivo]||act.archivo||'';
         html+=`<tr style="border-bottom:1px solid var(--gris1)">
-          <td style="padding:4px 8px 4px 16px;font-size:10.5px">${act.descripcion}</td>
-          <td style="padding:4px 8px;font-size:10px;color:var(--gris3)">${act.archivo}</td>
-          <td style="padding:4px 8px;text-align:center;font-size:10.5px;color:${metaVal>0?'#1d4ed8':'#6B7280'};font-weight:700">${metaVal>0?metaVal.toLocaleString("es-CO"):'0'}</td>
-          <td style="padding:4px 8px;text-align:center;font-weight:700;color:${color}">${found.toLocaleString("es-CO")}</td>
-          <td style="padding:4px 8px;text-align:center;font-size:10.5px;font-weight:700;color:${disc===0?'#059669':'#DC2626'}">${disc===0?'0':'−'+disc.toLocaleString("es-CO")}</td>
-          <td style="padding:4px 8px;text-align:center;font-size:10.5px">${pctStr}</td>
-          <td style="padding:4px 8px;text-align:center">${sfCell}</td>
+          <td style="padding:4px 8px 4px 12px;font-size:10.5px"><span style="display:block">${act.descripcion}</span>${archLbl?`<span style="font-size:9px;color:#94A3B8;font-weight:500">${archLbl}</span>`:''}</td>
+          <td style="padding:4px 6px;text-align:center;font-size:10.5px;color:${metaVal>0?'#1d4ed8':'#6B7280'};font-weight:700">${metaVal>0?metaVal.toLocaleString("es-CO"):'0'}</td>
+          <td style="padding:4px 6px;text-align:center;font-weight:700;color:${color}">${found.toLocaleString("es-CO")}</td>
+          <td style="padding:4px 6px;text-align:center;font-size:10.5px;font-weight:700;color:${disc===0?'#059669':'#DC2626'}">${disc===0?'0':'−'+disc.toLocaleString("es-CO")}</td>
+          <td style="padding:4px 6px;text-align:center;font-size:10.5px">${pctStr}</td>
+          <td style="padding:4px 6px;text-align:center">${sfCell}</td>
         </tr>`;
       }
     }
@@ -2642,7 +2651,7 @@ function renderPreeval(d){
       ?`<span style="margin-left:10px;padding:2px 8px;border-radius:10px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:700">+${segTotalSinFin.toLocaleString("es-CO")} sin finalidad correcta</span>`
       :'';
     html+=`<tr style="background:${col}22;border-top:2px solid ${col}">
-      <td colspan="2" style="padding:5px 8px;font-weight:800;color:${col};font-size:11px">TOTAL ${seg.replace(/^[^\s]+ /,'').toUpperCase()}</td>
+      <td style="padding:5px 8px;font-weight:800;color:${col};font-size:11px">TOTAL ${seg.replace(/^[^\s]+ /,'').toUpperCase()}</td>
       <td style="padding:5px 8px;text-align:center;font-size:10.5px;color:var(--gris3)">—</td>
       <td style="padding:5px 8px;text-align:center;font-weight:800;color:${col};font-size:11px">${segTotalFound.toLocaleString("es-CO")}</td>
       <td colspan="2" style="padding:5px 8px;text-align:center"></td>
