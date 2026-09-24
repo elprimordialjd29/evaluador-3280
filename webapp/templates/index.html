@@ -1908,7 +1908,7 @@ function toggleSinFin(key){ // key = aid (todos) OR aid::RUTA (solo esa ruta)
 // Pacientes validados manualmente por actividad: {aid: Set<rowKey>}
 window._pacientesValidados = window._pacientesValidados || {};
 
-function abrirValidarPacientes(aid, rutaGrupo){
+function abrirValidarPacientes(aid, rutaGrupo, prog){
   if(!_preevalDatos||!window._resultCupsGlobal||!window._rkRecord) return;
   // Buscar la actividad en _preevalDatos.resultados (estructura real del servidor)
   let actCfg=null;
@@ -1926,7 +1926,8 @@ function abrirValidarPacientes(aid, rutaGrupo){
   const fechaKey=FECHA_KEY[archivo]||'';
   const finSet=new Set(finalidades);
   // Validados previamente
-  const yaValidados=window._pacientesValidados[aid]||new Set();
+  const pvKey=prog?(prog+'|'+aid):aid;
+  const yaValidados=window._pacientesValidados[pvKey]||new Set();
   const rkRec=window._rkRecord[archivo]||{};
   // MODO RUTA CRUZADA: usar los rowKeys exactos de sinFinRutas (mismo dedup que la auditoría)
   // sinFinRutas[grupo][cups][ruta] = Set<rowKey> donde grupo=grupo de la actividad, ruta=PLANIFICACION etc.
@@ -2111,6 +2112,7 @@ function abrirValidarPacientes(aid, rutaGrupo){
     :`<tr><td colspan="11" style="padding:20px;text-align:center;color:#9ca3af">No se encontraron registros con error para esta actividad</td></tr>`;
   m.querySelector('#mvpTabla tbody').innerHTML=rows||emptyMsg;
   m.querySelector('#mvpAid').value=aid;
+  m.querySelector('#mvpProg').value=prog||'';
   m.style.display='flex';
 }
 
@@ -2142,11 +2144,13 @@ function _mostrarToastValidado(n){
 
 function _guardarValidados(){
   const aid=document.getElementById('mvpAid').value;
+  const prog=document.getElementById('mvpProg').value;
+  const pvKey=prog?(prog+'|'+aid):aid;
   const checks=document.querySelectorAll('#mvpTabla input[type=checkbox]');
   const sel=new Set();
   checks.forEach(c=>{if(c.checked) sel.add(c.dataset.rk);});
   const n=sel.size;
-  window._pacientesValidados[aid]=sel;
+  window._pacientesValidados[pvKey]=sel;
   // Guardar posición de scroll del modal de auditoría antes de cerrar
   const auditBody=document.getElementById('audit-modal-body');
   const scrollY=auditBody?auditBody.scrollTop:0;
@@ -2392,7 +2396,8 @@ function abrirModalAuditoria(){
       const metaObj2=(S.metas?.[prog]?.[aid])||(_metas_ips?.[prog]?.[aid])||null;
       const metaVal2=metaObj2?+(metaObj2.meta??metaObj2)||0:0;
       // Pacientes incluidos manualmente para esta actividad
-      const nValidados=(window._pacientesValidados&&window._pacientesValidados[aid])?window._pacientesValidados[aid].size:0;
+      const _pvKey2=prog+'|'+aid;
+      const nValidados=(window._pacientesValidados&&window._pacientesValidados[_pvKey2])?window._pacientesValidados[_pvKey2].size:0;
       const conc2Base=act.tiene_finalidad?conFin:total;
       const conc2=conc2Base+nValidados;
       // meta=0 → sin obligación → discordancia=0, cumplimiento=100%
@@ -2453,7 +2458,7 @@ function abrirModalAuditoria(){
             <td style="padding:4px 8px;color:#374151">${errTipo}</td>
             <td style="padding:4px 8px;color:#374151;font-size:9px">${corregir}</td>
             <td style="padding:4px 6px">
-              <button onclick="window._auditScrollPos=document.getElementById('audit-modal-body').scrollTop;cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}')"
+              <button onclick="window._auditScrollPos=document.getElementById('audit-modal-body').scrollTop;cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}',null,'${prog}')"
                 style="padding:2px 7px;border-radius:4px;border:1.5px solid #7C3AED;background:#F5F3FF;color:#5B21B6;font-size:8.5px;font-weight:700;cursor:pointer;white-space:nowrap">
                 👥 Ver pacientes</button>
             </td>
@@ -2473,7 +2478,7 @@ function abrirModalAuditoria(){
             </td>
             <td colspan="4" style="padding:5px 8px;font-size:9px;color:#6B7280">Ruta cruzada</td>
             <td style="padding:5px 8px;text-align:center">
-              <button onclick="window._auditScrollPos=document.getElementById('audit-modal-body').scrollTop;cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}','${ruta}')"
+              <button onclick="window._auditScrollPos=document.getElementById('audit-modal-body').scrollTop;cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}','${ruta}','${prog}')"
                 style="padding:2px 7px;border-radius:4px;border:1.5px solid #92400E;background:#FFFBEB;color:#92400E;font-size:8.5px;font-weight:700;cursor:pointer;white-space:nowrap">
                 👥 Ver pacientes</button>
             </td>
@@ -2813,7 +2818,7 @@ function imprimirAuditoria(){
       for(const[aid,act] of acts){
         const metaObj=(S.metas?.[prog]?.[aid])||(_metas_ips?.[prog]?.[aid])||null;
         const metaVal=metaObj?+(metaObj.meta||metaObj)||0:0;
-        const nVal=(window._pacientesValidados?.[aid]||new Set()).size;
+        const nVal=(window._pacientesValidados?.[prog+'|'+aid]||new Set()).size;
         const found=(act.tiene_finalidad?(act.encontrados_fin||0):(act.encontrados||0))+nVal;
         const disc=metaVal>0?Math.max(0,metaVal-found):Math.max(0,(act.encontrados||0)-(act.encontrados_fin||0));
         const pct=metaVal>0?Math.round(found/metaVal*100):null;
@@ -3103,8 +3108,9 @@ function renderPreeval(d){
             if(!rutaSinFinLocal[ruta]) delete rutaSinFinLocal[ruta];
           }
         }
-        // Pacientes validados manualmente
-        const validados=window._pacientesValidados&&window._pacientesValidados[aid]?window._pacientesValidados[aid].size:0;
+        // Pacientes validados manualmente (clave: prog|aid para evitar contaminación entre programas)
+        const _pvKey=pid+'|'+aid;
+        const validados=window._pacientesValidados&&window._pacientesValidados[_pvKey]?window._pacientesValidados[_pvKey].size:0;
         // found: base + master toggle + toggles individuales por ruta + validados manualmente
         let found=usarFin?(act.encontrados_fin||0):(act.encontrados||0);
         if(usarFin&&sinFin>0){
@@ -3123,7 +3129,7 @@ function renderPreeval(d){
           const lbl=validados>0?`✓ ${validados} validado${validados>1?'s':''}  |  Validar pacientes`:'🔍 Validar pacientes';
           const btnColor=validados>0?'#065F46':'#1d4ed8';
           const btnBg=validados>0?'#D1FAE5':'#EFF6FF';
-          sfCell=`<button onclick="abrirValidarPacientes('${aid}')"
+          sfCell=`<button onclick="abrirValidarPacientes('${aid}',null,'${pid}')"
             style="display:block;width:100%;text-align:center;padding:3px 8px;border-radius:6px;
             border:1px solid ${validados>0?'#34D399':'#93C5FD'};background:${btnBg};
             color:${btnColor};font-size:9.5px;font-weight:600;cursor:pointer;margin-bottom:5px">
@@ -4761,6 +4767,7 @@ function dashIrEvaluacion(){
     <!-- Footer -->
     <div style="padding:12px 18px;border-top:1px solid #e5e7eb;background:#f8fafc;display:flex;align-items:center;gap:8px;flex-shrink:0">
       <input type="hidden" id="mvpAid">
+      <input type="hidden" id="mvpProg">
       <div style="flex:1;font-size:10px;color:#9ca3af">Seleccionados → <b>Actividad Conciliada</b></div>
       <button onclick="_cerrarValidarPacientes()" style="padding:6px 14px;border-radius:7px;border:1px solid #d1d5db;background:#fff;color:#6b7280;font-size:11px;cursor:pointer">Cancelar</button>
       <button onclick="_guardarValidados()" style="padding:6px 16px;border-radius:7px;border:none;background:#1d4ed8;color:#fff;font-size:11px;font-weight:700;cursor:pointer">✓ Incluir en conteo</button>
