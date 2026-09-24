@@ -2391,7 +2391,10 @@ function abrirModalAuditoria(){
       // META, DISCORDANCIA, % CUMPLIMIENTO
       const metaObj2=(S.metas?.[prog]?.[aid])||(_metas_ips?.[prog]?.[aid])||null;
       const metaVal2=metaObj2?+(metaObj2.meta??metaObj2)||0:0;
-      const conc2=act.tiene_finalidad?conFin:total;
+      // Pacientes incluidos manualmente para esta actividad
+      const nValidados=(window._pacientesValidados&&window._pacientesValidados[aid])?window._pacientesValidados[aid].size:0;
+      const conc2Base=act.tiene_finalidad?conFin:total;
+      const conc2=conc2Base+nValidados;
       // meta=0 → sin obligación → discordancia=0, cumplimiento=100%
       const disc2=metaVal2>0?Math.max(0,metaVal2-conc2):0;
       const pct2=metaVal2>0?(conc2>=metaVal2?1:conc2/metaVal2):1;
@@ -2407,10 +2410,14 @@ function abrirModalAuditoria(){
           <div style="font-size:9px;color:#9CA3AF;margin-top:1px">${ARCH_LBL3[act.archivo]||act.archivo||''}${sinRegistros?' · Sin registros en RIPS':''}</div>
         </td>
         <td style="padding:7px 8px;text-align:center;font-weight:700;color:${metaVal2>0?'#1d4ed8':'#6B7280'}">${metaVal2>0?metaVal2.toLocaleString('es-CO'):'0'}</td>
-        <td style="padding:7px 8px;text-align:center;font-weight:700;color:${conc2>0?'#059669':'#9CA3AF'}">${sinRegistros?'—':conc2.toLocaleString('es-CO')}</td>
+        <td style="padding:7px 8px;text-align:center;font-weight:700;color:${conc2>0?'#059669':'#9CA3AF'}">
+          ${sinRegistros?'—':conc2.toLocaleString('es-CO')}
+          ${nValidados>0?`<div style="font-size:8px;color:#166534;font-weight:600;margin-top:1px;white-space:nowrap">+${nValidados} incluido${nValidados!==1?'s':''}</div>`:''}
+        </td>
         <td style="padding:7px 8px;text-align:center;font-weight:700;color:${disc2===0?'#059669':'#DC2626'}">${disc2===0?'0':'−'+disc2.toLocaleString('es-CO')}</td>
         <td style="padding:7px 8px;text-align:center">${sinRegistros?'—':pctStr2}</td>
         <td style="padding:7px 8px;text-align:center">
+          ${nValidados>0?`<span style="display:inline-flex;align-items:center;gap:3px;background:#DCFCE7;color:#166534;border:1px solid #86EFAC;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap;margin-bottom:2px">✓ ${nValidados} incluido${nValidados!==1?'s':''}</span><br>`:''}
           ${actMal?`<span style="background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap">⚠️ Error finalidad</span>`
           :hayRutas?`<span style="background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap">↔ Ruta cruzada</span>`
           :act.tiene_finalidad&&!sinRegistros?`<span style="color:#059669;font-weight:700;font-size:10px">✅</span>`
