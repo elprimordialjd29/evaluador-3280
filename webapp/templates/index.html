@@ -2233,43 +2233,49 @@ function abrirModalAuditoria(){
       }
     }
     if(progHayRutasCruz) progErrTypes.push(`<span style="font-size:9.5px;color:#92400E">⚠️ Pacientes de ruta cruzada detectados en este programa</span>`);
-    html+=`<div style="margin-bottom:8px;border:1.5px solid ${progOK?'#D1FAE5':'#FEE2E2'};border-radius:8px;overflow:hidden">
-      <div style="background:${progOK?'#ECFDF5':'#FFF5F5'};padding:7px 12px">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-          <span style="font-size:12px;font-weight:700;color:${catColor}">${PROG_LBL_A[prog]||prog}</span>
-          <div style="display:flex;gap:12px;align-items:center;font-size:11px;flex-wrap:wrap">
-            <span style="color:#6B7280">${progTotal.toLocaleString('es-CO')} actividades</span>
-            ${progActs.some(a=>a.tiene_finalidad)?`
-            <span style="color:#059669;font-weight:700">✅ ${progConFin.toLocaleString('es-CO')} correctas</span>
-            <span style="color:${progSinFin>0?'#DC2626':'#059669'};font-weight:700">${progSinFin>0?'⚠️':'✅'} ${progSinFin.toLocaleString('es-CO')} incorrectas</span>`:''}
-            <span style="font-weight:700;color:${progOK?'#059669':'#DC2626'}">${progOK?'✅ Sin errores':''}</span>
-          </div>
+    const NORMA_M='Res. 3280 de 2018 / Res. 948 de 2026';
+    const FIN_LBL3={'01':'Diagnóstico y tratamiento','05':'Detección temprana de enfermedad','09':'Protección específica','10':'Información, educación y comunicación','11':'Rehabilitación y recuperación','12':'Salud oral','13':'Vacunación','14':'Crecimiento y desarrollo','15':'Medicina alternativa y complementaria','17':'Suplementación con micronutrientes','18':'Planificación familiar (promoción)','19':'Planificación familiar (consulta)','20':'Planificación familiar (procedimiento)','21':'Control prenatal','22':'Atención del parto','23':'Atención posparto','24':'Atención de urgencias','25':'Atención al recién nacido','26':'Terapia respiratoria','27':'Hemoterapia','30':'Otro'};
+    const ARCH_LBL3={'consultas':'Consulta','procedimientos':'Procedimiento','medicamentos':'Medicamento','otrosServicios':'Otro servicio'};
+    const EDAD_RANGO={'PRIMERA_INFANCIA':'0 meses – 5 años','INFANCIA':'6 – 11 años','ADOLESCENCIA':'12 – 17 años','JOVENES':'18 – 26 años','ADULTEZ':'27 – 59 años','VEJEZ':'60 años o más','RUTA_MATERNA_PRECONCEPCION':'Preconcepción','RUTA_MATERNA_IVE':'IVE','RUTA_MATERNA_PRENATAL':'Prenatal','RUTA_MATERNA_PARTO':'Parto','RUTA_MATERNA_POSPARTO':'Posparto'};
+    const edadRango=EDAD_RANGO[prog]||'';
+    const hayFin=progActs.some(a=>a.tiene_finalidad);
+    html+=`<div style="margin-bottom:14px;border:1px solid ${progOK?'#D1FAE5':'#FECACA'};border-radius:8px;overflow:hidden;page-break-inside:avoid">
+      <div style="background:${catColor};color:white;padding:9px 14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+        <div>
+          <span style="font-size:13px;font-weight:800">${PROG_LBL_A[prog]||prog}</span>
+          ${edadRango?`<span style="font-size:10px;opacity:0.8;margin-left:8px">(${edadRango})</span>`:''}
         </div>
-        ${progErrTypes.length?`<div style="margin-top:5px;padding-top:5px;border-top:1px solid ${progOK?'#D1FAE5':'#FECACA'};display:flex;flex-direction:column;gap:2px">${progErrTypes.join('')}</div>`:''}
+        <div style="display:flex;gap:14px;font-size:11px;align-items:center">
+          <span style="opacity:0.85">Total registros: <b>${progTotal.toLocaleString('es-CO')}</b></span>
+          ${hayFin?`<span style="background:rgba(255,255,255,0.15);padding:2px 8px;border-radius:10px;font-weight:700">${progOK?'✅ Sin errores':'⚠️ '+progSinFin.toLocaleString('es-CO')+' incorrectas'}</span>`:''}
+        </div>
       </div>
       <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:11px;min-width:480px">
+      <table style="width:100%;border-collapse:collapse;font-size:10.5px">
+        <thead>
+          <tr style="background:#F9FAFB;border-bottom:2px solid #E5E7EB">
+            <th style="padding:7px 10px;text-align:left;font-weight:700;color:#374151;min-width:230px">Descripción del CUPS</th>
+            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#1d4ed8;white-space:nowrap;min-width:60px">META</th>
+            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#065F46;white-space:nowrap;min-width:80px">ACTIVIDAD<br>CONCILIADA</th>
+            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#92400E;white-space:nowrap;min-width:70px">DISCOR-<br>DANCIA</th>
+            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#5B21B6;white-space:nowrap;min-width:65px">%<br>CUMPL.</th>
+            <th style="padding:7px 8px;text-align:center;font-weight:700;color:#374151;min-width:70px">ESTADO</th>
+          </tr>
+        </thead>
         <tbody>`;
     for(const[aid,act] of Object.entries(acts)){
       const total=act.encontrados||0;
       const conFin=act.encontrados_fin||0;
       const sf=total-conFin;
       const actMal=act.tiene_finalidad&&sf>0;
-      // Finalidades esperadas (mostrar código + descripción)
-      const FIN_LBL2={'01':'Diagnóstico y tratamiento','05':'Detección temprana de enfermedad','09':'Protección específica','10':'Información, educación y comunicación','11':'Rehabilitación y recuperación','12':'Salud oral','13':'Vacunación','14':'Crecimiento y desarrollo','15':'Medicina alternativa y complementaria','17':'Suplementación con micronutrientes','18':'Planificación familiar (promoción)','19':'Planificación familiar (consulta)','20':'Planificación familiar (procedimiento)','21':'Control prenatal','22':'Atención del parto','23':'Atención posparto','24':'Atención de urgencias','25':'Atención al recién nacido','26':'Terapia respiratoria','27':'Hemoterapia','30':'Otro'};
-      const ARCH_LBL={'consultas':'Consulta','procedimientos':'Procedimiento','medicamentos':'Medicamento','otrosServicios':'Otro servicio'};
-      let finEsperadaHtml='<span style="color:#9ca3af;font-size:10px">—</span>';
       let finEsperadaTexto='';
       if(act.tiene_finalidad&&act.finalidades&&act.finalidades.length){
-        finEsperadaHtml=act.finalidades.map(f=>`<span style="display:inline-block;background:#dbeafe;color:#1d4ed8;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:700;margin:1px">${f}${FIN_LBL2[f]?' – '+FIN_LBL2[f]:''}</span>`).join(' ');
-        finEsperadaTexto=act.finalidades.map(f=>`${f}${FIN_LBL2[f]?' – '+FIN_LBL2[f]:''}`).join(', ');
+        finEsperadaTexto=act.finalidades.map(f=>`${f}${FIN_LBL3[f]?' – '+FIN_LBL3[f]:''}`).join(' / ');
       }
-      // Para actividades con error: calcular breakdown de qué finalidades se registraron
-      let errorBreakdownHtml='';
+      // Calcular breakdown de finalidades incorrectas
+      let conteoFin={};
       if(actMal&&window._resultCupsGlobal&&window._resultFinGlobal&&window._rkRecord&&act.cups&&act.grupos&&act.finalidades){
-        const finKey2={'consultas':'finalidadTecnologiaSalud','procedimientos':'finalidadTecnologiaSalud','medicamentos':'','otrosServicios':''};
-        const fk=finKey2[act.archivo]||'';
-        const finSet2=new Set(act.finalidades);
+        const fk={'consultas':'finalidadTecnologiaSalud','procedimientos':'finalidadTecnologiaSalud','medicamentos':'','otrosServicios':''}[act.archivo]||'';
         const sinFinRKs2=new Set();
         for(const grp2 of act.grupos){
           const cupsMap2=(window._resultCupsGlobal[act.archivo]||{})[grp2]||{};
@@ -2281,8 +2287,6 @@ function abrirModalAuditoria(){
             for(const rk2 of allRKs2){if(!conFinRKs2.has(rk2))sinFinRKs2.add(rk2);}
           }
         }
-        // Contar qué finalidades tienen esos registros
-        const conteoFin={};
         const rkRec2=window._rkRecord[act.archivo]||{};
         for(const rk2 of sinFinRKs2){
           const r2=rkRec2[rk2];
@@ -2290,83 +2294,91 @@ function abrirModalAuditoria(){
           const k2=fin2||'(sin finalidad)';
           conteoFin[k2]=(conteoFin[k2]||0)+1;
         }
-        const partes=Object.entries(conteoFin).sort((a,b)=>b[1]-a[1]).map(([fin2,cnt2])=>{
-          const esSinFin=fin2==='(sin finalidad)';
-          const desc=esSinFin?'sin finalidad':`${fin2}${FIN_LBL2[fin2]?' – '+FIN_LBL2[fin2]:''}`;
-          return `<span style="display:inline-block;background:${esSinFin?'#fef3c7':'#fee2e2'};color:${esSinFin?'#92400e':'#991b1b'};border-radius:3px;padding:1px 5px;font-size:9.5px;font-weight:600;margin:1px">${cnt2} con ${desc}</span>`;
-        });
-        errorBreakdownHtml=partes.join(' ');
       }
-      // Rutas cruzadas para esta actividad (usando datos locales también)
-      let rutaChips='';
-      if(act.ruta_audit){
-        for(const[ruta,cr] of Object.entries(act.ruta_audit)){
-          const rutaSf=(act.ruta_sin_fin&&act.ruta_sin_fin[ruta])||0;
-          rutaChips+=`<div style="padding:4px 10px;border-radius:5px;background:${rutaSf>0?'#FEF3C7':'#F0FDF4'};border:1px solid ${rutaSf>0?'#FCD34D':'#BBF7D0'};font-size:9.5px">
-            <div style="color:#374151"><b>${RLBL[ruta]||ruta}:</b> ${cr.toLocaleString('es-CO')} registros de pacientes de otra ruta</div>
-            ${rutaSf>0
-              ?`<div style="color:#92400E;font-weight:700;margin-top:2px">⚠️ ${rutaSf.toLocaleString('es-CO')} también con finalidad incorrecta</div>
-                <button onclick="cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}','${ruta}')" style="margin-top:4px;padding:2px 8px;border-radius:4px;border:1.5px solid #92400E;background:#FFFBEB;color:#92400E;font-size:9px;font-weight:700;cursor:pointer">👥 Ver pacientes con error</button>`
-              :`<div style="display:flex;align-items:center;gap:6px;margin-top:2px">
-                  <span style="color:#065F46;font-size:9.5px">✅ Finalidad correcta en esos registros</span>
-                  <button onclick="cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}','${ruta}')" style="padding:2px 8px;border-radius:4px;border:1.5px solid #065F46;background:#F0FDF4;color:#065F46;font-size:9px;font-weight:700;cursor:pointer">👥 Ver pacientes</button>
-                </div>`}
-          </div>`;
-        }
-      }
-      // Determinar si hay algo relevante que mostrar para esta actividad
-      const hayRutas=!!rutaChips;
-      const hayError=actMal;
+      // META, DISCORDANCIA, % CUMPLIMIENTO
+      const metaObj2=(S.metas?.[prog]?.[aid])||(_metas_ips?.[prog]?.[aid])||null;
+      const metaVal2=metaObj2?+(metaObj2.meta??metaObj2)||0:0;
+      const conc2=act.tiene_finalidad?conFin:total;
+      const disc2=metaVal2>0?Math.max(0,metaVal2-conc2):null;
+      const pct2=metaVal2>0?(conc2>=metaVal2?1:conc2/metaVal2):null;
+      const pctStr2=pct2===null?'—':pct2>=1?`<span style="color:#059669;font-weight:700">100%</span>`:`<span style="color:${pct2>=0.9?'#D97706':'#DC2626'};font-weight:700">${(pct2*100).toFixed(1)}%</span>`;
+      // Rutas cruzadas
+      const hayRutas=!!(act.ruta_audit&&Object.keys(act.ruta_audit).length);
       const hayRegistros=total>0;
-      // Si no hay registros Y no hay rutas cruzadas: fila compacta sin métricas vacías
       const sinRegistros=!hayRegistros&&!hayRutas;
-      html+=`<tr style="border-top:1px solid #F3F4F6;background:${hayError?'#FFF5F5':hayRutas?'#FFFBEB':'white'}">
-        <td colspan="6" style="padding:${sinRegistros?'5px 12px':'8px 12px'}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
-            <!-- Descripción + tipo -->
-            <div style="flex:1;min-width:180px">
-              <div style="font-weight:700;color:${sinRegistros?'#9CA3AF':'#111827'};font-size:${sinRegistros?'10.5px':'11.5px'};line-height:1.3;margin-bottom:2px">${act.descripcion||''}</div>
-              <div style="font-size:9.5px;color:#9CA3AF">Tipo: ${ARCH_LBL[act.archivo]||act.archivo||''}${sinRegistros?' · <i>Sin registros en RIPS</i>':''}</div>
-            </div>
-            ${sinRegistros?'':`
-            <!-- Métricas + error -->
-            <div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
-              <!-- Conteo principal -->
-              ${act.tiene_finalidad?`
-              <div style="text-align:center;min-width:52px">
-                <div style="font-size:9px;color:#6B7280;margin-bottom:1px">Correctas</div>
-                <div style="font-weight:700;font-size:15px;color:${conFin>0?'#059669':'#9CA3AF'}">${conFin>0?conFin.toLocaleString('es-CO'):'0'}</div>
-              </div>
-              <div style="text-align:center;min-width:52px">
-                <div style="font-size:9px;color:#6B7280;margin-bottom:1px">Incorrectas</div>
-                <div style="font-weight:700;font-size:15px;color:${hayError?'#DC2626':'#059669'}">${sf>0?sf.toLocaleString('es-CO'):'0'}</div>
-              </div>`:`
-              <div style="text-align:center;min-width:52px">
-                <div style="font-size:9px;color:#6B7280;margin-bottom:1px">Registros</div>
-                <div style="font-weight:700;font-size:15px;color:#059669">${total.toLocaleString('es-CO')}</div>
-              </div>`}
-              <!-- Detalle del error de finalidad -->
-              ${hayError?`
-              <div style="max-width:360px">
-                <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
-                  <span style="background:#FEE2E2;color:#991B1B;padding:2px 7px;border-radius:3px;font-weight:700;font-size:9.5px">⚠️ Error: Finalidad incorrecta</span>
-                  <button onclick="cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}')" style="padding:2px 9px;border-radius:4px;border:1.5px solid #7C3AED;background:#F5F3FF;color:#5B21B6;font-size:9.5px;font-weight:700;cursor:pointer">👥 Ver pacientes</button>
-                </div>
-                <div style="font-size:10px;color:#374151;margin-bottom:4px"><b>Finalidad requerida:</b> ${finEsperadaHtml}</div>
-                <div style="font-size:9.5px;color:#6B7280;margin-bottom:3px"><b>Finalidades registradas incorrectamente:</b></div>
-                <div style="display:flex;flex-wrap:wrap;gap:2px">${errorBreakdownHtml}</div>
-              </div>`
-              :act.tiene_finalidad?`<div style="display:flex;align-items:center"><span style="font-size:10px;color:#059669;font-weight:700">✅ Sin errores de finalidad</span></div>`
-              :''}
-              <!-- Rutas cruzadas -->
-              ${hayRutas?`<div style="display:flex;flex-wrap:wrap;gap:4px;align-items:flex-start">
-                <div style="font-size:9.5px;color:#92400E;font-weight:700;width:100%;margin-bottom:2px">⚠️ Pacientes de otra ruta detectados:</div>
-                ${rutaChips}
-              </div>`:''}
-            </div>`}
-          </div>
+      // Fila principal de la actividad
+      html+=`<tr style="border-bottom:1px solid ${actMal?'#FECACA':hayRutas?'#FDE68A':'#F3F4F6'};background:${actMal?'#FFF5F5':hayRutas?'#FFFBEB':'white'}">
+        <td style="padding:7px 10px">
+          <div style="font-weight:${sinRegistros?'400':'600'};color:${sinRegistros?'#9CA3AF':'#111827'};line-height:1.3">${act.descripcion||''}</div>
+          <div style="font-size:9px;color:#9CA3AF;margin-top:1px">${ARCH_LBL3[act.archivo]||act.archivo||''}${sinRegistros?' · Sin registros en RIPS':''}</div>
+        </td>
+        <td style="padding:7px 8px;text-align:center;font-weight:700;color:${metaVal2>0?'#1d4ed8':'#9CA3AF'}">${metaVal2>0?metaVal2.toLocaleString('es-CO'):'—'}</td>
+        <td style="padding:7px 8px;text-align:center;font-weight:700;color:${conc2>0?'#059669':'#9CA3AF'}">${sinRegistros?'—':conc2.toLocaleString('es-CO')}</td>
+        <td style="padding:7px 8px;text-align:center;font-weight:700;color:${disc2===null?'#9CA3AF':disc2===0?'#059669':'#DC2626'}">${disc2===null?'—':disc2===0?'0':'−'+disc2.toLocaleString('es-CO')}</td>
+        <td style="padding:7px 8px;text-align:center">${sinRegistros?'—':pctStr2}</td>
+        <td style="padding:7px 8px;text-align:center">
+          ${actMal?`<span style="background:#FEE2E2;color:#991B1B;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap">⚠️ Error finalidad</span>`
+          :hayRutas?`<span style="background:#FEF3C7;color:#92400E;padding:2px 6px;border-radius:4px;font-size:9px;font-weight:700;white-space:nowrap">↔ Ruta cruzada</span>`
+          :act.tiene_finalidad&&!sinRegistros?`<span style="color:#059669;font-weight:700;font-size:10px">✅</span>`
+          :sinRegistros?`<span style="color:#9CA3AF;font-size:9px">—</span>`:''}
         </td>
       </tr>`;
+      // Sub-filas de error por tipo de finalidad incorrecta
+      if(actMal&&Object.keys(conteoFin).length){
+        html+=`<tr style="border-bottom:2px solid #FEE2E2;background:#FFF8F8">
+          <td colspan="6" style="padding:0 10px 8px 26px">
+            <div style="font-size:9px;color:#991B1B;font-weight:700;padding:5px 0 3px">Detalle de errores de finalidad:</div>
+            <table style="width:100%;border-collapse:collapse;font-size:9.5px">
+              <thead><tr style="background:#FEE2E2">
+                <th style="padding:4px 8px;text-align:left;color:#991B1B">Finalidad registrada</th>
+                <th style="padding:4px 6px;text-align:center;color:#991B1B">Cant.</th>
+                <th style="padding:4px 8px;text-align:left;color:#065F46">Finalidad requerida</th>
+                <th style="padding:4px 8px;text-align:left;color:#374151">Tipo de error</th>
+                <th style="padding:4px 8px;text-align:left;color:#065F46">A corregir</th>
+                <th style="padding:4px 6px;text-align:center"></th>
+              </tr></thead>
+              <tbody>`;
+        for(const[fin2,cnt2] of Object.entries(conteoFin).sort((a,b)=>b[1]-a[1])){
+          const esSF=fin2==='(sin finalidad)';
+          const finDesc2=esSF?'Sin código de finalidad':`${fin2} – ${FIN_LBL3[fin2]||fin2}`;
+          const errTipo=esSF?'Sin finalidad registrada':'Finalidad incorrecta';
+          const corregir=esSF
+            ?`Campo vacío. Registre: ${finEsperadaTexto||'—'} (${NORMA_M})`
+            :`Cambie a: ${finEsperadaTexto||'—'} (${NORMA_M})`;
+          html+=`<tr style="border-bottom:1px solid #FEF2F2">
+            <td style="padding:4px 8px;color:#991B1B">${finDesc2}</td>
+            <td style="padding:4px 6px;text-align:center;font-weight:700;color:#DC2626">${cnt2}</td>
+            <td style="padding:4px 8px;color:#065F46;font-weight:600">${finEsperadaTexto||'—'}</td>
+            <td style="padding:4px 8px;color:#374151">${errTipo}</td>
+            <td style="padding:4px 8px;color:#374151;font-size:9px">${corregir}</td>
+            <td style="padding:4px 6px">
+              <button onclick="cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}')"
+                style="padding:2px 7px;border-radius:4px;border:1.5px solid #7C3AED;background:#F5F3FF;color:#5B21B6;font-size:8.5px;font-weight:700;cursor:pointer;white-space:nowrap">
+                👥 Ver pacientes</button>
+            </td>
+          </tr>`;
+        }
+        html+=`</tbody></table></td></tr>`;
+      }
+      // Filas de ruta cruzada
+      if(hayRutas){
+        for(const[ruta,cr] of Object.entries(act.ruta_audit)){
+          const rutaSf=(act.ruta_sin_fin&&act.ruta_sin_fin[ruta])||0;
+          html+=`<tr style="border-bottom:1px solid #FDE68A;background:#FFFBEB">
+            <td style="padding:5px 10px 5px 26px;font-size:9.5px">
+              <span style="color:#92400E;font-weight:700">${RLBL[ruta]||ruta}</span>
+              <span style="color:#6B7280;margin-left:6px">${cr.toLocaleString('es-CO')} registros de pacientes de otra ruta</span>
+              ${rutaSf>0?`<span style="color:#DC2626;font-weight:700;margin-left:6px">· ⚠️ ${rutaSf} también con finalidad incorrecta</span>`:'<span style="color:#059669;margin-left:6px">· ✅ Finalidad correcta</span>'}
+            </td>
+            <td colspan="4" style="padding:5px 8px;font-size:9px;color:#6B7280">Ruta cruzada</td>
+            <td style="padding:5px 8px;text-align:center">
+              <button onclick="cerrarModalAuditoria();window._validarPacientesDesdeAuditoria=true;abrirValidarPacientes('${aid}','${ruta}')"
+                style="padding:2px 7px;border-radius:4px;border:1.5px solid #92400E;background:#FFFBEB;color:#92400E;font-size:8.5px;font-weight:700;cursor:pointer;white-space:nowrap">
+                👥 Ver pacientes</button>
+            </td>
+          </tr>`;
+        }
+      }
     }
     html+=`</tbody></table></div>
       <div style="padding:6px 10px;background:#FAFAFA;border-top:1px solid #F3F4F6">
