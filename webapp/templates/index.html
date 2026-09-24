@@ -2496,63 +2496,105 @@ async function exportarPacientesError(btn){
   const d=_preevalDatos;
   const FIN_LBL_E={'01':'Diagnóstico y tratamiento','05':'Detección temprana','09':'Protección específica','10':'Información y educación','11':'Rehabilitación y recuperación','12':'Salud oral','13':'Vacunación','14':'Crecimiento y desarrollo','15':'Medicina alternativa','17':'Micronutrientes','18':'PF – Promoción','19':'PF – Consulta','20':'PF – Procedimiento','21':'Control prenatal','22':'Atención del parto','23':'Posparto','24':'Urgencias','25':'Recién nacido','26':'Terapia respiratoria','27':'Hemoterapia','30':'Otro'};
   const ARCH_FK={'consultas':'finalidadTecnologiaSalud','procedimientos':'finalidadTecnologiaSalud','medicamentos':'','otrosServicios':''};
-  const ORDEN_P=['PRIMERA_INFANCIA','INFANCIA','ADOLESCENCIA','JOVENES','ADULTEZ','VEJEZ',
-    'RUTA_MATERNA_PRECONCEPCION','RUTA_MATERNA_IVE','RUTA_MATERNA_PRENATAL','RUTA_MATERNA_PARTO','RUTA_MATERNA_POSPARTO',
-    'DI_PRIMERA_INFANCIA','DI_INFANCIA','DI_ADOLESCENCIA','DI_JOVENES','DI_ADULTEZ','DI_VEJEZ',
-    'DI0007','DI0008','DI0009','DI00011','DI_SALUD_MENTAL','RCV_RIESGO','RCV_DM','RCV_DM_HTA'];
-  const PNOM={'PRIMERA_INFANCIA':'Primera Infancia','INFANCIA':'Infancia','ADOLESCENCIA':'Adolescencia','JOVENES':'Jóvenes','ADULTEZ':'Adultez','VEJEZ':'Vejez','RUTA_MATERNA_PRECONCEPCION':'R.M. Preconcepción','RUTA_MATERNA_IVE':'R.M. IVE','RUTA_MATERNA_PRENATAL':'R.M. Prenatal','RUTA_MATERNA_PARTO':'R.M. Parto','RUTA_MATERNA_POSPARTO':'R.M. Posparto','DI_PRIMERA_INFANCIA':'DI 1ra Infancia','DI_INFANCIA':'DI Infancia','DI_ADOLESCENCIA':'DI Adolescencia','DI_JOVENES':'DI Jóvenes','DI_ADULTEZ':'DI Adultez','DI_VEJEZ':'DI Vejez','DI0007':'DI Hipertensión','DI0008':'DI Diabetes','DI0009':'DI DM+HTA','DI00011':'DI Dislipidemia','DI_SALUD_MENTAL':'DI Sal. Mental','RCV_RIESGO':'RCV Riesgo','RCV_DM':'RCV Diabetes','RCV_DM_HTA':'RCV DM+HTA'};
-  const GCAT={'PRIMERA_INFANCIA':'Cursos de Vida','INFANCIA':'Cursos de Vida','ADOLESCENCIA':'Cursos de Vida','JOVENES':'Cursos de Vida','ADULTEZ':'Cursos de Vida','VEJEZ':'Cursos de Vida','RUTA_MATERNA_PRECONCEPCION':'Ruta Materna','RUTA_MATERNA_IVE':'Ruta Materna','RUTA_MATERNA_PRENATAL':'Ruta Materna','RUTA_MATERNA_PARTO':'Ruta Materna','RUTA_MATERNA_POSPARTO':'Ruta Materna','DI_PRIMERA_INFANCIA':'Demanda Inducida','DI_INFANCIA':'Demanda Inducida','DI_ADOLESCENCIA':'Demanda Inducida','DI_JOVENES':'Demanda Inducida','DI_ADULTEZ':'Demanda Inducida','DI_VEJEZ':'Demanda Inducida','DI0007':'Demanda Inducida','DI0008':'Demanda Inducida','DI0009':'Demanda Inducida','DI00011':'Demanda Inducida','DI_SALUD_MENTAL':'Demanda Inducida','RCV_RIESGO':'RCV','RCV_DM':'RCV','RCV_DM_HTA':'RCV'};
-  const programas=[];
-  const progOrdenE=[...ORDEN_P.filter(p=>d.resultados&&d.resultados[p]),...Object.keys(d.resultados||{}).filter(p=>!ORDEN_P.includes(p))];
-  for(const prog of progOrdenE){
-    const datos=d.resultados[prog]||{};
-    const actividades=[];
-    for(const[aid,act] of Object.entries(datos.actividades||{})){
-      if(!act.tiene_finalidad) continue;
-      const sf=(act.encontrados||0)-(act.encontrados_fin||0);
-      if(sf<=0) continue;
-      // Recopilar pacientes con error
-      const fk=ARCH_FK[act.archivo]||'';
-      const sinFinRKs=new Set();
-      for(const grp of(act.grupos||[])){
-        const cupsMap=(window._resultCupsGlobal&&window._resultCupsGlobal[act.archivo]&&window._resultCupsGlobal[act.archivo][grp])||{};
-        const finMap=(window._resultFinGlobal&&window._resultFinGlobal[act.archivo]&&window._resultFinGlobal[act.archivo][grp])||{};
-        for(const cup of(act.cups||[])){
-          const allRKs=cupsMap[cup.toUpperCase()]||new Set();
-          const conFinRKs=new Set();
-          for(const fin of(act.finalidades||[])){const ck=cup.toUpperCase()+'|'+fin;for(const rk of(finMap[ck]||new Set()))conFinRKs.add(rk);}
-          for(const rk of allRKs){if(!conFinRKs.has(rk))sinFinRKs.add(rk);}
+  // Hojas individuales + grupos
+  const HOJAS_INDIV=[
+    {id:'PRIMERA_INFANCIA',nombre:'Primera Infancia',rango:'0–5 años'},
+    {id:'INFANCIA',nombre:'Infancia',rango:'6–11 años'},
+    {id:'ADOLESCENCIA',nombre:'Adolescencia',rango:'12–17 años'},
+    {id:'JOVENES',nombre:'Jovenes',rango:'18–26 años'},
+    {id:'ADULTEZ',nombre:'Adultez',rango:'27–59 años'},
+    {id:'VEJEZ',nombre:'Vejez',rango:'60+ años'},
+    {id:'RUTA_MATERNA_PRECONCEPCION',nombre:'RM Preconcepcion',rango:'Preconcepción'},
+    {id:'RUTA_MATERNA_IVE',nombre:'RM IVE',rango:'IVE'},
+    {id:'RUTA_MATERNA_PRENATAL',nombre:'RM Prenatal',rango:'Prenatal'},
+    {id:'RUTA_MATERNA_PARTO',nombre:'RM Parto',rango:'Parto'},
+    {id:'RUTA_MATERNA_POSPARTO',nombre:'RM Posparto',rango:'Posparto'},
+  ];
+  const GRUPOS_MULTI=[
+    {ids:['DI_PRIMERA_INFANCIA','DI_INFANCIA','DI_ADOLESCENCIA','DI_JOVENES','DI_ADULTEZ','DI_VEJEZ','DI0007','DI0008','DI0009','DI00011','DI_SALUD_MENTAL'],nombre:'Demanda Inducida',rango:''},
+    {ids:['RCV_RIESGO','RCV_DM','RCV_DM_HTA'],nombre:'RCV',rango:''}
+  ];
+
+  function recopilarHoja(progIds, nombre, rango){
+    const pacientes_error=[];
+    const faltantes=[];
+    const numDocConteo={};
+    for(const prog of progIds){
+      const datos=d.resultados[prog];
+      if(!datos) continue;
+      for(const[aid,act] of Object.entries(datos.actividades||{})){
+        // ── FALTANTES: actividades bajo la meta ────────────────────────────
+        const metaObj=(S.metas?.[prog]?.[aid])||(_metas_ips?.[prog]?.[aid])||null;
+        const metaVal=metaObj?+(metaObj.meta||metaObj)||0:0;
+        const conc=act.tiene_finalidad?(act.encontrados_fin||0):(act.encontrados||0);
+        if(metaVal>0&&conc<metaVal){
+          faltantes.push({descripcion:act.descripcion||aid,cups:(act.cups||[]).join(', '),archivo:act.archivo||'',meta:metaVal,conciliada:conc,discordancia:metaVal-conc,pctCumpl:Math.round(conc/metaVal*100)});
+        }
+        // ── PACIENTES CON ERROR DE FINALIDAD ──────────────────────────────
+        if(!act.tiene_finalidad) continue;
+        const sf=(act.encontrados||0)-(act.encontrados_fin||0);
+        if(sf<=0) continue;
+        const fk=ARCH_FK[act.archivo]||'';
+        const sinFinRKs=new Set();
+        for(const grp of(act.grupos||[])){
+          const cupsMap=(window._resultCupsGlobal?.[act.archivo]?.[grp])||{};
+          const finMap=(window._resultFinGlobal?.[act.archivo]?.[grp])||{};
+          for(const cup of(act.cups||[])){
+            const allRKs=cupsMap[cup.toUpperCase()]||new Set();
+            const conFinRKs=new Set();
+            for(const fin of(act.finalidades||[])){const ck=cup.toUpperCase()+'|'+fin;for(const rk of(finMap[ck]||new Set()))conFinRKs.add(rk);}
+            for(const rk of allRKs){if(!conFinRKs.has(rk))sinFinRKs.add(rk);}
+          }
+        }
+        const rkRec=window._rkRecord?.[act.archivo]||{};
+        const finReq=(act.finalidades||[]).map(f=>`${f}${FIN_LBL_E[f]?' – '+FIN_LBL_E[f]:''}`).join(' / ');
+        // Track duplicates
+        const docsEnEstaAct=new Set();
+        for(const rk of sinFinRKs){
+          const r=rkRec[rk]; if(!r) continue;
+          const numDoc=String(r.numDocumentoIdentificacion||r.numDocIdentificacion||'');
+          docsEnEstaAct.add(numDoc);
+          numDocConteo[numDoc]=(numDocConteo[numDoc]||0)+1;
+        }
+        for(const rk of sinFinRKs){
+          const r=rkRec[rk]; if(!r) continue;
+          const numDoc=String(r.numDocumentoIdentificacion||r.numDocIdentificacion||'');
+          const meta=window._pacienteMetaGlobal?.[numDoc]||{};
+          const finReg=fk?String(r[fk]||'').trim():'';
+          const finRegDesc=finReg?(finReg+(FIN_LBL_E[finReg]?' – '+FIN_LBL_E[finReg]:'')):'(sin finalidad)';
+          pacientes_error.push({
+            numDoc,tipoDoc:String(r.tipoDocumentoIdentificacion||r.tipoDocIdentificacion||''),
+            edad:meta.edad||'',sexo:meta.sexo||'',
+            fechaAtencion:String(r.fechaInicioAtencion||r.fechaConsulta||r.fecha||''),
+            dx:String(r.codDiagnosticoPrincipal||r.codDiagnostico||r.diagnostico||''),
+            cups:String((act.cups||[])[0]||''),
+            descripcionCups:act.descripcion||aid,
+            programa:prog,
+            finalidadRegistrada:finRegDesc,finReq,
+            tipoError:finReg?'Finalidad incorrecta':'Sin finalidad registrada',
+            aCorregir:`Registre: ${finReq} (Res. 3280/2018)`
+          });
         }
       }
-      const rkRec=window._rkRecord&&window._rkRecord[act.archivo]||{};
-      const finReq=(act.finalidades||[]).map(f=>`${f}${FIN_LBL_E[f]?' – '+FIN_LBL_E[f]:''}`).join(' / ');
-      const pacientes=[];
-      for(const rk of sinFinRKs){
-        const r=rkRec[rk];
-        if(!r) continue;
-        const numDoc=String(r.numDocumentoIdentificacion||r.numDocIdentificacion||'');
-        const meta=window._pacienteMetaGlobal&&window._pacienteMetaGlobal[numDoc]||{};
-        const finReg=fk?String(r[fk]||'').trim():'';
-        const finRegDesc=finReg?(finReg+(FIN_LBL_E[finReg]?' – '+FIN_LBL_E[finReg]:'')):'(sin finalidad)';
-        pacientes.push({
-          numDoc,tipoDoc:String(r.tipoDocumentoIdentificacion||r.tipoDocIdentificacion||''),
-          edad:meta.edad||'',sexo:meta.sexo||'',
-          fechaAtencion:String(r.fechaInicioAtencion||r.fechaConsulta||r.fecha||''),
-          dx:String(r.codDiagnosticoPrincipal||r.codDiagnostico||r.diagnostico||''),
-          cups:String((act.cups||[])[0]||''),
-          finalidadRegistrada:finRegDesc,finReq,
-          tipoError:finReg?'Finalidad incorrecta':'Sin finalidad registrada',
-          aCorregir:`Registre: ${finReq} (Res. 3280/2018)`
-        });
-      }
-      if(pacientes.length) actividades.push({cups:(act.cups||[]).join(', '),descripcion:act.descripcion||aid,archivo:act.archivo||'',finalidadRequerida:finReq,pacientes});
     }
-    if(actividades.length) programas.push({id:prog,nombre:PNOM[prog]||prog,categoria:GCAT[prog]||'',actividades});
+    // Marcar duplicados (mismo numDoc en más de una actividad)
+    for(const p of pacientes_error) p.duplicado=numDocConteo[p.numDoc]>1;
+    return{nombre,rango,pacientes_error,faltantes};
   }
-  if(!programas.length){alert('No se encontraron pacientes con errores de finalidad.');btn.textContent=orig;btn.disabled=false;return;}
+
+  const hojas=[];
+  for(const h of HOJAS_INDIV){
+    const hoja=recopilarHoja([h.id],h.nombre,h.rango);
+    if(hoja.pacientes_error.length||hoja.faltantes.length) hojas.push(hoja);
+  }
+  for(const g of GRUPOS_MULTI){
+    const hoja=recopilarHoja(g.ids,g.nombre,g.rango);
+    if(hoja.pacientes_error.length||hoja.faltantes.length) hojas.push(hoja);
+  }
+  if(!hojas.length){alert('No se encontraron errores ni faltantes.');btn.textContent=orig;btn.disabled=false;return;}
   const prestador=document.getElementById('sel-prestador')?.selectedOptions?.[0]?.text||'';
   try{
-    const r=await fetch('/api/preeval/exportar-errores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prestador_nombre:prestador,fecha:new Date().toISOString().slice(0,10),programas})});
+    const r=await fetch('/api/preeval/exportar-errores',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prestador_nombre:prestador,fecha:new Date().toISOString().slice(0,10),hojas})});
     if(!r.ok){alert('Error al generar Excel: '+r.status);btn.textContent=orig;btn.disabled=false;return;}
     const blob=await r.blob();
     const url=URL.createObjectURL(blob);
@@ -2576,12 +2618,19 @@ function imprimirAuditoria(){
   const prestNom=st.prestador||document.getElementById('sel-prestador')?.selectedOptions?.[0]?.text||'';
   const fechaRep=st.fecha||new Date().toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'});
   const gTA=st.total||0, gB=st.bien||0, gM=st.mal||0;
-  // Limpiar el HTML del modal: quitar botones, textareas y cursor:pointer
+  // Limpiar el HTML del modal: quitar botones, textareas, wrappers que causan espacios
   const contenido=body.innerHTML
     .replace(/<textarea[\s\S]*?<\/textarea>/gi,'')
     .replace(/<button[\s\S]*?<\/button>/gi,'')
     .replace(/cursor:\s*pointer\s*;?/g,'')
-    .replace(/onclick="[^"]*"/g,'');
+    .replace(/onclick="[^"]*"/g,'')
+    // Quitar div wrapper de textarea/notas (padding:6px 10px;background:#FAFAFA...)
+    .replace(/<div[^>]*background:[^"]*#FAFAFA[^>]*>[\s\S]*?<\/div>/gi,'')
+    // Desempaquetar overflow-x:auto divs (dejan espacio vacío al imprimir)
+    .replace(/<div[^>]*overflow-x:\s*auto[^>]*>([\s\S]*?)<\/div>/gi,'$1')
+    // Eliminar margin/padding excesivos en secciones de separación
+    .replace(/margin-bottom:\s*(2[0-9]|[3-9]\d)px/g,'margin-bottom:8px')
+    .replace(/padding:\s*\d+px\s+\d+px\s+\d+px/g,'padding:4px 8px');
   win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
   <title>Auditoría Res. 3280 — ${prestNom||'RIPS'}</title>
   <style>

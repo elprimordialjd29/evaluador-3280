@@ -1085,111 +1085,153 @@ def get_actas():
 @app.route("/api/preeval/exportar-errores", methods=["POST"])
 @login_required
 def preeval_exportar_errores():
-    """Genera Excel con pacientes que tienen errores de finalidad, por programa."""
+    """Genera Excel con una hoja por programa: pacientes con error + actividades faltantes."""
     import io
     from openpyxl import Workbook
     from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
 
     body = request.get_json() or {}
-    programas = body.get("programas", [])
+    hojas = body.get("hojas", [])
     prestador = body.get("prestador_nombre", "")
     fecha = body.get("fecha", datetime.datetime.now().strftime("%Y-%m-%d"))
 
     wb = Workbook()
-    wb.remove(wb.active)  # quitar hoja vacía inicial
+    wb.remove(wb.active)
 
     thin = Side(style="thin", color="CCCCCC")
     bord = Border(left=thin, right=thin, top=thin, bottom=thin)
-    CAT_COLORS = {"Cursos de Vida": "1E40AF", "Ruta Materna": "9D174D",
-                  "Demanda Inducida": "065F46", "RCV": "92400E"}
-    HEADERS = ["N°","Tipo Doc","Núm. Doc","Edad","Sexo","Fecha Atención",
-               "Código Dx","Programa","CUPS","Descripción actividad",
-               "Finalidad registrada","Finalidad requerida","Tipo de error","Acción correctiva"]
-    COL_WIDTHS = [5, 10, 16, 6, 6, 16, 12, 22, 14, 45, 30, 30, 22, 40]
 
-    # Agrupar por categoría
-    cat_sheets = {}
-    for prog in programas:
-        cat = prog.get("categoria", "Otros")
-        cat_sheets.setdefault(cat, []).append(prog)
+    HDR_PAC = ["N°","Tipo Doc","Núm. Doc","Edad","Sexo","Fecha Atención",
+               "Código Dx","CUPS","Descripción actividad",
+               "Finalidad registrada","Finalidad requerida","Tipo de error","Acción correctiva","Observación"]
+    WID_PAC  = [5, 10, 16, 6, 6, 16, 12, 14, 40, 28, 28, 22, 38, 14]
 
-    cat_order = ["Cursos de Vida", "Ruta Materna", "Demanda Inducida", "RCV", "Otros"]
-    for cat in cat_order:
-        if cat not in cat_sheets:
-            continue
-        ws = wb.create_sheet(title=cat[:31])
-        fill_hdr = PatternFill("solid", fgColor=CAT_COLORS.get(cat, "374151"))
-        fill_prog = PatternFill("solid", fgColor="DBEAFE")
-        fill_err = PatternFill("solid", fgColor="FEF2F2")
+    HDR_FALT = ["Descripción actividad","CUPS","Archivo","Meta","Conciliada","Discordancia","% Cumpl."]
+    WID_FALT = [45, 14, 14, 10, 10, 12, 10]
 
-        # Título
-        ws.merge_cells(f"A1:{get_column_letter(len(HEADERS))}1")
-        ws["A1"] = f"Pacientes con errores de finalidad — {cat} | {prestador} | {fecha}"
-        ws["A1"].font = Font(bold=True, size=12, color="FFFFFF")
-        ws["A1"].fill = fill_hdr
-        ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
-        ws.row_dimensions[1].height = 20
+    FILL_HDR_MAIN = PatternFill("solid", fgColor="1E3A5F")
+    FILL_HDR_SEC  = PatternFill("solid", fgColor="7C3AED")
+    FILL_ERR      = PatternFill("solid", fgColor="FEF2F2")
+    FILL_DUP      = PatternFill("solid", fgColor="FFF7ED")
+    FILL_FALT     = PatternFill("solid", fgColor="FEF9C3")
+    FILL_FALT_HDR = PatternFill("solid", fgColor="B45309")
 
-        # Subtítulo norma
-        ws.merge_cells(f"A2:{get_column_letter(len(HEADERS))}2")
-        ws["A2"] = "Resolución 3280 de 2018 / Resolución 948 de 2026 — DUSAKAWI EPSI"
-        ws["A2"].font = Font(italic=True, size=9, color="374151")
-        ws["A2"].alignment = Alignment(horizontal="center")
+    def write_title(ws, text, ncols, row, fill):
+        ws.merge_cells(f"A{row}:{get_column_letter(ncols)}{row}")
+        c = ws.cell(row=row, column=1, value=text)
+        c.font = Font(bold=True, size=11, color="FFFFFF")
+        c.fill = fill
+        c.alignment = Alignment(horizontal="center", vertical="center")
+        ws.row_dimensions[row].height = 18
 
-        # Encabezados
-        for col, (h, w) in enumerate(zip(HEADERS, COL_WIDTHS), 1):
-            c = ws.cell(row=3, column=col, value=h)
+    def write_headers(ws, headers, widths, row, fill):
+        for col, (h, w) in enumerate(zip(headers, widths), 1):
+            c = ws.cell(row=row, column=col, value=h)
             c.font = Font(bold=True, size=9, color="FFFFFF")
-            c.fill = PatternFill("solid", fgColor="1E3A5F")
+            c.fill = fill
             c.alignment = Alignment(horizontal="center", wrap_text=True)
             c.border = bord
             ws.column_dimensions[get_column_letter(col)].width = w
-        ws.row_dimensions[3].height = 22
+        ws.row_dimensions[row].height = 20
 
-        row = 4
-        n = 0
-        for prog in cat_sheets[cat]:
-            pnom = prog.get("nombre", prog.get("id", ""))
-            for act in prog.get("actividades", []):
-                desc = act.get("descripcion", "")
-                cups = act.get("cups", "")
-                fin_req = act.get("finalidadRequerida", "")
-                for pac in act.get("pacientes", []):
-                    n += 1
-                    vals = [
-                        n,
-                        pac.get("tipoDoc",""),
-                        pac.get("numDoc",""),
-                        pac.get("edad",""),
-                        pac.get("sexo",""),
-                        pac.get("fechaAtencion",""),
-                        pac.get("dx",""),
-                        pnom,
-                        cups,
-                        desc,
-                        pac.get("finalidadRegistrada",""),
-                        fin_req,
-                        pac.get("tipoError",""),
-                        pac.get("aCorregir",""),
-                    ]
-                    bg = fill_err if pac.get("tipoError","")!="" else PatternFill()
-                    for col, v in enumerate(vals, 1):
-                        c = ws.cell(row=row, column=col, value=v)
-                        c.font = Font(size=9)
-                        c.border = bord
-                        c.alignment = Alignment(wrap_text=(col in (10,14)), vertical="top")
-                        if col >= 11:
-                            c.fill = bg
-                    ws.row_dimensions[row].height = 14
-                    row += 1
+    for hoja in hojas:
+        nombre = hoja.get("nombre", "Programa")[:31]
+        rango  = hoja.get("rango", "")
+        pac_err = hoja.get("pacientes_error", [])
+        faltantes = hoja.get("faltantes", [])
 
-        # Congelar paneles
-        ws.freeze_panes = "A4"
+        ws = wb.create_sheet(title=nombre)
+        ncols = max(len(HDR_PAC), len(HDR_FALT))
+
+        # Fila 1: título principal
+        titulo = f"{nombre}{' — '+rango if rango else ''} | {prestador} | {fecha}"
+        write_title(ws, titulo, ncols, 1, FILL_HDR_MAIN)
+
+        # Fila 2: subtítulo norma
+        ws.merge_cells(f"A2:{get_column_letter(ncols)}2")
+        ws["A2"] = "Res. 3280 de 2018 / Res. 948 de 2026 — DUSAKAWI EPSI"
+        ws["A2"].font = Font(italic=True, size=8, color="374151")
+        ws["A2"].alignment = Alignment(horizontal="center")
+
+        # ── SECCIÓN 1: PACIENTES CON ERROR ──────────────────────────────────
+        write_title(ws, f"SECCIÓN 1 — Pacientes con error de finalidad ({len(pac_err)} registros)", len(HDR_PAC), 3, FILL_HDR_MAIN)
+        write_headers(ws, HDR_PAC, WID_PAC, 4, FILL_HDR_MAIN)
+        ws.freeze_panes = "A5"
+
+        row = 5
+        for n, pac in enumerate(pac_err, 1):
+            dup = pac.get("duplicado", False)
+            fill = FILL_DUP if dup else (FILL_ERR if pac.get("tipoError") else PatternFill())
+            obs = "⚠ Duplicado" if dup else ""
+            vals = [
+                n,
+                pac.get("tipoDoc",""),
+                pac.get("numDoc",""),
+                pac.get("edad",""),
+                pac.get("sexo",""),
+                pac.get("fechaAtencion",""),
+                pac.get("dx",""),
+                pac.get("cups",""),
+                pac.get("descripcionCups",""),
+                pac.get("finalidadRegistrada",""),
+                pac.get("finReq",""),
+                pac.get("tipoError",""),
+                pac.get("aCorregir",""),
+                obs,
+            ]
+            for col, v in enumerate(vals, 1):
+                c = ws.cell(row=row, column=col, value=v)
+                c.font = Font(size=9)
+                c.border = bord
+                c.alignment = Alignment(wrap_text=(col in (9,13)), vertical="top")
+                c.fill = fill
+            ws.row_dimensions[row].height = 14
+            row += 1
+
+        if not pac_err:
+            ws.merge_cells(f"A{row}:{get_column_letter(len(HDR_PAC))}{row}")
+            ws.cell(row=row, column=1, value="✅ Sin errores de finalidad para este programa").font = Font(italic=True, color="166534")
+            row += 1
+
+        row += 1  # fila vacía separadora
+
+        # ── SECCIÓN 2: ACTIVIDADES FALTANTES ───────────────────────────────
+        write_title(ws, f"SECCIÓN 2 — Actividades bajo la meta ({len(faltantes)} actividades)", len(HDR_FALT), row, FILL_FALT_HDR)
+        row += 1
+        write_headers(ws, HDR_FALT, WID_FALT, row, FILL_FALT_HDR)
+        row += 1
+
+        for falt in faltantes:
+            pct = falt.get("pctCumpl", 0)
+            fill_f = PatternFill("solid", fgColor="FEE2E2") if pct < 50 else FILL_FALT
+            vals = [
+                falt.get("descripcion",""),
+                falt.get("cups",""),
+                falt.get("archivo",""),
+                falt.get("meta",0),
+                falt.get("conciliada",0),
+                falt.get("discordancia",0),
+                f"{pct}%",
+            ]
+            for col, v in enumerate(vals, 1):
+                c = ws.cell(row=row, column=col, value=v)
+                c.font = Font(size=9)
+                c.border = bord
+                c.alignment = Alignment(wrap_text=(col==1), vertical="top")
+                c.fill = fill_f
+                if col in (4,5,6):
+                    c.alignment = Alignment(horizontal="center")
+            ws.row_dimensions[row].height = 14
+            row += 1
+
+        if not faltantes:
+            ws.merge_cells(f"A{row}:{get_column_letter(len(HDR_FALT))}{row}")
+            ws.cell(row=row, column=1, value="✅ Todas las actividades cumplen la meta").font = Font(italic=True, color="166534")
 
     if not wb.sheetnames:
-        wb.create_sheet("Sin errores")
-        wb.active["A1"] = "No se encontraron pacientes con errores de finalidad."
+        wb.create_sheet("Sin datos")
+        wb.active["A1"] = "No se encontraron errores ni actividades faltantes."
 
     buf = io.BytesIO()
     wb.save(buf)
