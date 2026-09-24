@@ -2548,13 +2548,14 @@ async function exportarPacientesError(btn){
         }
         const rkRec=window._rkRecord?.[act.archivo]||{};
         const finReq=(act.finalidades||[]).map(f=>`${f}${FIN_LBL_E[f]?' – '+FIN_LBL_E[f]:''}`).join(' / ');
-        // Track duplicates
-        const docsEnEstaAct=new Set();
+        // Registrar qué CUPS únicos tiene cada paciente con error
+        // (múltiples visitas al mismo CUPS NO son duplicado — ej. barniz de flúor repite)
+        const cupsActual=String((act.cups||[])[0]||'');
         for(const rk of sinFinRKs){
           const r=rkRec[rk]; if(!r) continue;
           const numDoc=String(r.numDocumentoIdentificacion||r.numDocIdentificacion||'');
-          docsEnEstaAct.add(numDoc);
-          numDocConteo[numDoc]=(numDocConteo[numDoc]||0)+1;
+          if(!numDocConteo[numDoc]) numDocConteo[numDoc]=new Set();
+          numDocConteo[numDoc].add(cupsActual);
         }
         for(const rk of sinFinRKs){
           const r=rkRec[rk]; if(!r) continue;
@@ -2577,8 +2578,8 @@ async function exportarPacientesError(btn){
         }
       }
     }
-    // Marcar duplicados (mismo numDoc en más de una actividad)
-    for(const p of pacientes_error) p.duplicado=numDocConteo[p.numDoc]>1;
+    // Duplicado = mismo paciente con error en más de 1 CUPS/actividad diferente
+    for(const p of pacientes_error) p.duplicado=(numDocConteo[p.numDoc]?.size||0)>1;
     return{nombre,rango,pacientes_error,faltantes};
   }
 
@@ -2618,19 +2619,20 @@ function imprimirAuditoria(){
   const prestNom=st.prestador||document.getElementById('sel-prestador')?.selectedOptions?.[0]?.text||'';
   const fechaRep=st.fecha||new Date().toLocaleDateString('es-CO',{year:'numeric',month:'long',day:'numeric'});
   const gTA=st.total||0, gB=st.bien||0, gM=st.mal||0;
-  // Limpiar el HTML del modal: quitar botones, textareas, wrappers que causan espacios
+  // Limpiar el HTML del modal: quitar botones, textareas y elementos que no imprimen bien
   const contenido=body.innerHTML
     .replace(/<textarea[\s\S]*?<\/textarea>/gi,'')
     .replace(/<button[\s\S]*?<\/button>/gi,'')
     .replace(/cursor:\s*pointer\s*;?/g,'')
     .replace(/onclick="[^"]*"/g,'')
-    // Quitar div wrapper de textarea/notas (padding:6px 10px;background:#FAFAFA...)
-    .replace(/<div[^>]*background:[^"]*#FAFAFA[^>]*>[\s\S]*?<\/div>/gi,'')
-    // Desempaquetar overflow-x:auto divs (dejan espacio vacío al imprimir)
-    .replace(/<div[^>]*overflow-x:\s*auto[^>]*>([\s\S]*?)<\/div>/gi,'$1')
-    // Eliminar margin/padding excesivos en secciones de separación
-    .replace(/margin-bottom:\s*(2[0-9]|[3-9]\d)px/g,'margin-bottom:8px')
-    .replace(/padding:\s*\d+px\s+\d+px\s+\d+px/g,'padding:4px 8px');
+    // Quitar divs de fondo #FAFAFA (wrappers de notas vacías)
+    .replace(/<div[^>]*background(?:-color)?:\s*#FAFAFA[^>]*>[\s\S]*?<\/div>/gi,'')
+    // Reducir inline margin-bottom grandes (>14px) a 6px
+    .replace(/margin-bottom:\s*(\d+)px/g,(_,n)=>parseInt(n)>14?'margin-bottom:6px':'margin-bottom:'+n+'px')
+    // Reducir inline padding grandes en divs de encabezado de sección
+    .replace(/padding:\s*(\d+)px\s+(\d+)px\s+(\d+)px\s+(\d+)px/g,(_,a,b,c,d)=>`padding:${Math.min(+a,5)}px ${b}px ${Math.min(+c,5)}px ${d}px`)
+    // Quitar overflow-x:auto de divs (innecesario en print y crea altura vacía)
+    .replace(/overflow-x:\s*auto;?\s*/g,'');
   win.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="utf-8">
   <title>Auditoría Res. 3280 — ${prestNom||'RIPS'}</title>
   <style>
@@ -2676,10 +2678,22 @@ function imprimirAuditoria(){
     .nota-box{background:#FFFBEB;border:1px solid #FCD34D;padding:5px 10px;font-size:9px;margin-top:4px;border-radius:4px}
     .metodologia{background:#F0F9FF;border:1px solid #BAE6FD;border-left:4px solid #0284C7;padding:7px 12px;font-size:9px;color:#0C4A6E;margin-bottom:14px;border-radius:0 4px 4px 0;line-height:1.5}
     @page{size:A4 portrait;margin:8mm 7mm}
+    /* Comprimir espacios en print: sobreescribe inline styles */
+    div{max-height:none!important}
+    /* Reset de márgenes grandes en divs que no son bloques de programa */
+    div:not(.prog-block):not(.print-header):not(.sec-cat){
+      margin-top:0!important;margin-bottom:4px!important
+    }
+    /* Los bloques de programa conservan su separación */
+    .prog-block{margin-bottom:8px!important}
+    .sec-cat{margin:10px 0 4px!important}
+    .metodologia{margin-bottom:8px!important}
     @media print{
       body{font-size:9px}
       .prog-block{page-break-inside:avoid}
       thead{display:table-header-group}
+      /* En print aún más comprimido */
+      div:not(.prog-block):not(.print-header):not(.sec-cat){margin-bottom:2px!important}
     }
   </style></head><body>
   <div class="print-header">
