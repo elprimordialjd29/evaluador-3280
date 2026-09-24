@@ -2669,26 +2669,44 @@ function imprimirAuditoria(){
   const win=window.open('','_blank','width=1000,height=800');
   if(!win){alert('El navegador bloqueó la ventana emergente. Permite las ventanas emergentes para este sitio e intenta de nuevo.');return;}
   const css=`
-    *{box-sizing:border-box}
-    body{font-family:Arial,Helvetica,sans-serif;font-size:9.5pt;color:#1a1a1a;background:#fff;padding:10mm 10mm 8mm;margin:0}
-    /* ── Encabezado ── */
-    .hdr{background:#1E3A5F;color:#fff;padding:10pt 14pt;margin-bottom:8pt;display:flex;justify-content:space-between;align-items:flex-end}
-    .hdr-title{font-size:13pt;font-weight:900;letter-spacing:-.01em;line-height:1.2}
-    .hdr-sub{font-size:7.5pt;color:#93C5FD;margin-top:2pt;text-transform:uppercase;letter-spacing:.07em}
+    /* ── Reset para impresión ── */
+    *{box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
+    body{font-family:Arial,Helvetica,sans-serif;font-size:9pt;color:#1a1a1a;background:#fff;margin:0;padding:0}
+    @page{margin:10mm 8mm}
+    /* ── Encabezado PDF ── */
+    .hdr{background:#1E3A5F;color:#fff;padding:8pt 12pt;margin-bottom:6pt;display:flex;justify-content:space-between;align-items:flex-start}
+    .hdr-title{font-size:12pt;font-weight:900;letter-spacing:-.01em;line-height:1.2}
+    .hdr-sub{font-size:7pt;color:#93C5FD;margin-top:2pt;text-transform:uppercase;letter-spacing:.07em}
     .hdr-badges{display:flex;gap:5pt;margin-top:5pt;flex-wrap:wrap}
-    .bdg{font-size:7.5pt;font-weight:700;padding:1pt 8pt;border-radius:20pt;border:1.5pt solid #93C5FD;background:#2D5282;color:#E0F2FE}
+    .bdg{font-size:7pt;font-weight:700;padding:1pt 8pt;border-radius:20pt;border:1.5pt solid #93C5FD;background:#2D5282;color:#E0F2FE}
     .bdg-ok{border-color:#4ADE80;background:#166534;color:#DCFCE7}
     .bdg-mal{border-color:#FCA5A5;background:#7F1D1D;color:#FEF2F2}
-    .hdr-meta{text-align:right;font-size:8pt;line-height:1.7;color:#BFDBFE}
-    /* ── Pie ── */
-    .footer{margin-top:8pt;border-top:1pt solid #CBD5E1;padding-top:3pt;font-size:7pt;color:#64748B;display:flex;justify-content:space-between}
-    /* ── Forzar colores de fondo en impresión ── */
-    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}
-    @page{margin:10mm 8mm}
-    @media print{
-      body{padding:0;font-size:8.5pt}
-      .footer{position:fixed;bottom:0;left:0;right:0;padding:2mm 8mm;background:#fff;border-top:1pt solid #CBD5E1}
-    }`;
+    .hdr-meta{text-align:right;font-size:7.5pt;line-height:1.7;color:#BFDBFE;white-space:nowrap}
+    /* ── Pie fijo ── */
+    .footer{position:fixed;bottom:0;left:0;right:0;padding:2mm 8mm;background:#fff;border-top:1pt solid #CBD5E1;font-size:7pt;color:#64748B;display:flex;justify-content:space-between}
+    /* ── ANULAR estilos de pantalla que rompen la impresión ── */
+    /* Quitar overflow:hidden / max-height / border-radius que generan páginas en blanco */
+    div[style*="overflow:hidden"],
+    div[style*="overflow: hidden"]{overflow:visible!important}
+    div[style*="max-height"],
+    div[style*="max-height:"]{max-height:none!important;overflow:visible!important}
+    div[style*="border-radius"]{border-radius:0!important}
+    div[style*="border-radius:"]{border-radius:0!important}
+    /* Quitar flex-wrap y gap que pueden dejar bloques huérfanos */
+    div[style*="overflow-x:auto"],
+    div[style*="overflow-x: auto"]{overflow-x:visible!important}
+    /* ── Evitar salto de página dentro de filas y sub-tablas ── */
+    tr{page-break-inside:avoid;break-inside:avoid}
+    thead{display:table-header-group}
+    /* Bloques de programa: permitir salto dentro pero encabezado unido a primera fila */
+    div[style*="margin-bottom:14px"]{page-break-inside:auto;break-inside:auto}
+    div[style*="background:linear-gradient"]{page-break-after:avoid;break-after:avoid}
+    /* Sub-tablas de errores: no partir */
+    tr[style*="background:#FFF8F8"]{page-break-inside:avoid;break-inside:avoid}
+    /* ── Tablas: colapsar bordes y ocupar ancho completo ── */
+    table{width:100%!important;border-collapse:collapse!important;table-layout:auto!important}
+    /* ── Pie de página: compensar espacio del footer fijo ── */
+    body::after{content:'';display:block;height:14mm}`;
   win.document.write(`<!DOCTYPE html><html lang="es"><head>
   <meta charset="utf-8">
   <title>Auditoría Res. 3280 — ${prestNom||'RIPS'}</title>
