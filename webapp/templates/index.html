@@ -803,8 +803,8 @@ html.dark .it-btn.active{color:var(--azul2)}
           {% endif %}
         </div>
         <div style="overflow:auto;max-height:320px">
-          <table class="users-table" id="fin-table">
-            <thead style="position:sticky;top:0;z-index:1"><tr><th style="width:80px">Código</th><th>Descripción</th><th style="width:36px"></th></tr></thead>
+          <table class="users-table" id="fin-table" style="width:100%;table-layout:fixed">
+            <thead style="position:sticky;top:0;z-index:1"><tr><th style="width:80px">Código</th><th style="width:auto">Descripción</th><th style="width:36px"></th></tr></thead>
             <tbody id="fin-tbody"><tr><td colspan="3" style="text-align:center;padding:14px;color:var(--gris3)">Cargando...</td></tr></tbody>
           </table>
         </div>
@@ -3397,7 +3397,7 @@ function renderMantConfig(cfg){
     const texto=typeof desc==="object"?desc.descripcion||"":String(desc);
     return `<tr data-fin-row>
       <td style="width:80px"><input type="text" value="${cod}" class="fin-cod form-control" style="padding:4px 8px;font-size:12px;font-weight:700;width:68px;text-align:center"></td>
-      <td><input type="text" value="${texto}" class="fin-desc form-control" style="padding:4px 8px;font-size:12px;width:100%;box-sizing:border-box"></td>
+      <td style="padding:4px 6px"><input type="text" value="${texto}" class="fin-desc form-control" style="padding:4px 8px;font-size:12px;width:100%;min-width:0;box-sizing:border-box;display:block"></td>
       <td style="width:36px"><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--gris3)" title="Eliminar">🗑</button></td>
     </tr>`;}).join("");
 
