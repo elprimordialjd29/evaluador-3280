@@ -1737,7 +1737,22 @@ async function pmCargarArchivo(input){
   if(d.filas&&d.filas.length){
     pmSetFilas(d.filas);
     pmRenderTabla();
-    document.getElementById('pm-subtitle').textContent=`${d.filas.length} actividades extraídas — régimen ${_pmTabActivo==='SUB'?'SUBSIDIADO':'CONTRIBUTIVO'}`;
+    const esTpl=d.paginas_b64&&d.paginas_b64.length; // plantilla + imágenes = PDF escaneado
+    if(esTpl){
+      document.getElementById('pm-subtitle').textContent=`Plantilla DI cargada (${d.filas.length} actividades) — ingresa los valores META MES del PDF`;
+      const msg=document.getElementById('pm-empty');
+      if(msg){
+        msg.style.display='block';
+        msg.style.background='#fffbeb';
+        msg.style.border='1px solid #fbbf24';
+        msg.style.color='#92400e';
+        msg.style.padding='10px 14px';
+        msg.style.borderRadius='8px';
+        msg.innerHTML='📋 <strong>PDF escaneado detectado.</strong> Se cargó la plantilla estándar de actividades DI. <br>Revisa las páginas del PDF abajo e ingresa el valor de <strong>META MES</strong> para cada actividad.';
+      }
+    } else {
+      document.getElementById('pm-subtitle').textContent=`${d.filas.length} actividades extraídas — régimen ${_pmTabActivo==='SUB'?'SUBSIDIADO':'CONTRIBUTIVO'}`;
+    }
   } else {
     // Sin filas extraídas — PDF escaneado o sin columna META MES legible
     const hayPags=d.paginas_b64&&d.paginas_b64.length;

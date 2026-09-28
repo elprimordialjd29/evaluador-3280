@@ -467,6 +467,10 @@ def extract_metas_preview():
                         pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
                         png_bytes = pix.tobytes("png")
                         paginas_b64.append(base64.b64encode(png_bytes).decode())
+                    # Detectar si es nota técnica DI por nombre de archivo
+                    es_di = any(k in fname for k in ["anexo 12", "di", "demanda inducida", "sub actividades", "nota tecnica"])
+                    if es_di:
+                        filas = _plantilla_di()
                 else:
                     # PDF con texto: intentar extraer tabla META MES
                     filas = _extraer_filas_texto(texto_total)
@@ -487,6 +491,49 @@ def extract_metas_preview():
             tmp.unlink()
         except Exception:
             pass
+
+
+def _plantilla_di() -> list:
+    """Plantilla estándar de actividades Demanda Inducida Res. 3280 con meta_mes=0."""
+    return [
+        {"cups": "DI0001-1", "descripcion": "REMISIÓN A VALORACIÓN INTEGRAL PRIMERA VEZ O SEGUIMIENTO (PRIMERA INFANCIA)", "meta_mes": 0, "grupo": "PRIMERA INFANCIA"},
+        {"cups": "DI0001-4", "descripcion": "REMISIÓN A ACTUALIZACIÓN DE ESQUEMA PAI (PRIMERA INFANCIA)", "meta_mes": 0, "grupo": "PRIMERA INFANCIA"},
+        {"cups": "DI0001-5", "descripcion": "SEGUIMIENTO A INASISTENTES PRIMERA INFANCIA", "meta_mes": 0, "grupo": "PRIMERA INFANCIA"},
+        {"cups": "DI0002-1", "descripcion": "REMISIÓN A VALORACIÓN INTEGRAL PRIMERA VEZ O SEGUIMIENTO (INFANCIA)", "meta_mes": 0, "grupo": "INFANCIA"},
+        {"cups": "DI0002-4", "descripcion": "REMISIÓN A ACTUALIZACIÓN DE ESQUEMA PAI (INFANCIA)", "meta_mes": 0, "grupo": "INFANCIA"},
+        {"cups": "DI0002-5", "descripcion": "SEGUIMIENTO A INASISTENTES INFANCIA", "meta_mes": 0, "grupo": "INFANCIA"},
+        {"cups": "DI0003-1", "descripcion": "REMISIÓN A VALORACIÓN INTEGRAL PRIMERA VEZ O SEGUIMIENTO (ADOLESCENCIA)", "meta_mes": 0, "grupo": "ADOLESCENCIA"},
+        {"cups": "DI0003-4", "descripcion": "REMISIÓN A ACTUALIZACIÓN DE ESQUEMA PAI (ADOLESCENCIA)", "meta_mes": 0, "grupo": "ADOLESCENCIA"},
+        {"cups": "DI0003-5", "descripcion": "SEGUIMIENTO A INASISTENTES ADOLESCENCIA", "meta_mes": 0, "grupo": "ADOLESCENCIA"},
+        {"cups": "DI0004-1", "descripcion": "REMISIÓN A VALORACIÓN INTEGRAL PRIMERA VEZ O SEGUIMIENTO (JUVENTUD)", "meta_mes": 0, "grupo": "JOVENES"},
+        {"cups": "DI0004-3", "descripcion": "REMISIÓN A ACTUALIZACIÓN DE ESQUEMA PAI (JUVENTUD)", "meta_mes": 0, "grupo": "JOVENES"},
+        {"cups": "DI0004-5", "descripcion": "SEGUIMIENTO A INASISTENTES JUVENTUD", "meta_mes": 0, "grupo": "JOVENES"},
+        {"cups": "DI0005-1", "descripcion": "REMISIÓN A VALORACIÓN INTEGRAL PRIMERA VEZ O SEGUIMIENTO (ADULTEZ)", "meta_mes": 0, "grupo": "ADULTEZ"},
+        {"cups": "DI0005-3", "descripcion": "REMISIÓN A ACTUALIZACIÓN DE ESQUEMA PAI (ADULTEZ)", "meta_mes": 0, "grupo": "ADULTEZ"},
+        {"cups": "DI0005-5", "descripcion": "SEGUIMIENTO A INASISTENTES ADULTEZ", "meta_mes": 0, "grupo": "ADULTEZ"},
+        {"cups": "DI0006-1", "descripcion": "REMISIÓN A VALORACIÓN INTEGRAL PRIMERA VEZ O SEGUIMIENTO (VEJEZ)", "meta_mes": 0, "grupo": "VEJEZ"},
+        {"cups": "DI0006-3", "descripcion": "REMISIÓN A ACTUALIZACIÓN DE ESQUEMA PAI (VEJEZ)", "meta_mes": 0, "grupo": "VEJEZ"},
+        {"cups": "DI0006-5", "descripcion": "SEGUIMIENTO A INASISTENTES VEJEZ", "meta_mes": 0, "grupo": "VEJEZ"},
+        {"cups": "DI0007-1", "descripcion": "CANALIZACIÓN TOMA DE CITOLOGÍA CERVICOUTERINA", "meta_mes": 0, "grupo": "TAMIZACIONES"},
+        {"cups": "DI0006-10", "descripcion": "CANALIZACIÓN DETECCIÓN TEMPRANA CÁNCER DE COLON (SANGRE OCULTA EN HECES - BIANUAL)", "meta_mes": 0, "grupo": "TAMIZACIONES"},
+        {"cups": "DI0006-9", "descripcion": "CANALIZACIÓN DETECCIÓN TEMPRANA CÁNCER DE PRÓSTATA (PSA) - CADA 5 AÑOS", "meta_mes": 0, "grupo": "TAMIZACIONES"},
+        {"cups": "DI0007-2", "descripcion": "CANALIZACIÓN TOMA DE MAMOGRAFÍA", "meta_mes": 0, "grupo": "TAMIZACIONES"},
+        {"cups": "DI0008-1", "descripcion": "CAPTACIÓN USUARIOS DIAGNOSTICADOS HIPERTENSIÓN ARTERIAL - ESTRATEGIA CONOCE TU RIESGO PESO SALUDABLE", "meta_mes": 0, "grupo": "HTA-DM"},
+        {"cups": "DI0008-2", "descripcion": "CAPTACIÓN USUARIOS DIAGNOSTICADOS DIABETES MELLITUS - ESTRATEGIA CONOCE TU RIESGO PESO SALUDABLE", "meta_mes": 0, "grupo": "HTA-DM"},
+        {"cups": "DI0008-3", "descripcion": "SEGUIMIENTO PACIENTES INASISTENTES Y/O INADHERENTES CON HIPERTENSIÓN ARTERIAL", "meta_mes": 0, "grupo": "HTA-DM"},
+        {"cups": "DI0008-4", "descripcion": "SEGUIMIENTO PACIENTES INASISTENTES Y/O INADHERENTES CON DIABETES MELLITUS", "meta_mes": 0, "grupo": "HTA-DM"},
+        {"cups": "DI0009-2", "descripcion": "VISITAS DOMICILIARIAS Y APLICACIÓN DE LA FICHA DE RIESGO", "meta_mes": 0, "grupo": "CARACTERIZACION FAMILIAR"},
+        {"cups": "DI0009-4", "descripcion": "IDENTIFICACIÓN USUARIOS RENUENTES A LA RUTA Y/O SERVICIOS DE PROMOCIÓN-PREVENCIÓN", "meta_mes": 0, "grupo": "CARACTERIZACION FAMILIAR"},
+        {"cups": "DI00011-1", "descripcion": "CANALIZACIÓN CONSULTA PRECONCEPCIONAL", "meta_mes": 0, "grupo": "MATERNO PERINATAL"},
+        {"cups": "DI00011-4", "descripcion": "CANALIZACIÓN CONSULTA DE CONTROL PRENATAL", "meta_mes": 0, "grupo": "MATERNO PERINATAL"},
+        {"cups": "DI00011-7", "descripcion": "SEGUIMIENTO A INASISTENTES A RMNP", "meta_mes": 0, "grupo": "MATERNO PERINATAL"},
+        {"cups": "I11101", "descripcion": "EDUCACIÓN Y COMUNICACIÓN PARA LA PROMOCIÓN DE LA SALUD MENTAL", "meta_mes": 0, "grupo": "SALUD MENTAL"},
+        {"cups": "I11104", "descripcion": "EDUCACIÓN Y COMUNICACIÓN EN SALUD - FORTALECIMIENTO DE FACTORES PROTECTORES FRENTE AL CONSUMO", "meta_mes": 0, "grupo": "SALUD MENTAL"},
+        {"cups": "I11107", "descripcion": "EDUCACIÓN Y COMUNICACIÓN PARA LA PREVENCIÓN DE CONDUCTA SUICIDA", "meta_mes": 0, "grupo": "SALUD MENTAL"},
+        {"cups": "I11110", "descripcion": "EDUCACIÓN Y COMUNICACIÓN - PREVENCIÓN DE PROBLEMAS Y TRASTORNOS MENTALES (INCLUIDA FORMACIÓN DE PRIMEROS RESPONDIENTES)", "meta_mes": 0, "grupo": "SALUD MENTAL"},
+        {"cups": "I11202", "descripcion": "EDUCACIÓN Y COMUNICACIÓN PARA LA PREVENCIÓN DE VIOLENCIAS DE GÉNERO Y VIOLENCIAS SEXUALES", "meta_mes": 0, "grupo": "SALUD MENTAL"},
+        {"cups": "I11412", "descripcion": "EDUCACIÓN Y COMUNICACIÓN PARA LA ADOPCIÓN DE ESTILOS DE VIDA SALUDABLE", "meta_mes": 0, "grupo": "SALUD MENTAL"},
+    ]
 
 
 def _extraer_filas_texto(texto: str) -> list:
