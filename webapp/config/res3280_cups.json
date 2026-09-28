@@ -203,13 +203,16 @@
   ],
   "finalidades": {
     "11": "Promoción y mantenimiento de la salud",
-    "12": "Prevención de la enfermedad - protección específica",
-    "13": "Detección temprana de enfermedad general",
-    "14": "Protección específica - salud oral / crecimiento",
+    "12": "Prevención de la enfermedad y protección específica",
+    "13": "Detección temprana de enfermedad general y seguimiento",
+    "14": "Detección temprana de enfermedad huérfana y seguimiento",
     "15": "Atención de enfermedad de interés en salud pública",
     "16": "Diagnóstico",
     "17": "Tratamiento",
-    "18": "Rehabilitación y superación de discapacidad"
+    "18": "Rehabilitación y superación de la discapacidad",
+    "21": "Atención del parto",
+    "22": "Atención del recién nacido",
+    "23": "Atención en salud a víctimas de violencia"
   },
   "actividades_base": {
     "consulta_medicina_general": {
