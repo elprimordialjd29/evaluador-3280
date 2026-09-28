@@ -411,6 +411,158 @@ def set_metas_ips(ips_id):
     resumen = {prog: sum(acts.values()) if isinstance(acts, dict) else 0 for prog, acts in metas.items()}
     return jsonify({"ok": True, "metas": resumen})
 
+
+@app.route("/api/extract-metas-preview", methods=["POST"])
+@login_required
+def extract_metas_preview():
+    """
+    Recibe un archivo (PDF o Excel de nota técnica) y devuelve:
+    - filas: [{cups, descripcion, meta_mes, grupo}]
+    - paginas_b64: [str base64 PNG] (solo PDF escaneado)
+    """
+    f = request.files.get("archivo")
+    if not f:
+        return jsonify({"error": "Sin archivo"}), 400
+    fname = (f.filename or "").lower()
+    tmp = UPLOAD_DIR / f"preview_{uuid.uuid4().hex}_{f.filename}"
+    f.save(str(tmp))
+    try:
+        filas = []
+        paginas_b64 = []
+
+        if fname.endswith(".pdf"):
+            # Intentar extracción de texto primero
+            try:
+                import fitz  # PyMuPDF
+                doc = fitz.open(str(tmp))
+                texto_total = "\n".join(page.get_text() for page in doc)
+                if len(texto_total.strip()) < 100:
+                    # PDF escaneado: renderizar páginas como imágenes
+                    import base64, io
+                    for page in doc:
+                        pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5))
+                        png_bytes = pix.tobytes("png")
+                        paginas_b64.append(base64.b64encode(png_bytes).decode())
+                else:
+                    # PDF con texto: intentar extraer tabla META MES
+                    filas = _extraer_filas_texto(texto_total)
+            except Exception:
+                pass
+
+        elif fname.endswith((".xlsx", ".xls")):
+            try:
+                import openpyxl
+                wb = openpyxl.load_workbook(str(tmp), data_only=True)
+                filas = _extraer_filas_excel(wb)
+            except Exception as e:
+                return jsonify({"error": f"Error leyendo Excel: {e}"}), 400
+
+        return jsonify({"ok": True, "filas": filas, "paginas_b64": paginas_b64})
+    finally:
+        try:
+            tmp.unlink()
+        except Exception:
+            pass
+
+
+def _extraer_filas_texto(texto: str) -> list:
+    """Extrae filas {cups, descripcion, meta_mes, grupo} de texto de PDF DI / RCV."""
+    import re
+    filas = []
+    grupo_actual = ""
+    for linea in texto.splitlines():
+        linea = linea.strip()
+        if not linea:
+            continue
+        # Detectar encabezado de grupo
+        for patron, gid in [
+            (r"PRIMERA INFANCIA", "PRIMERA INFANCIA"),
+            (r"INFANCIA \(6", "INFANCIA"),
+            (r"ADOLESCENCIA", "ADOLESCENCIA"),
+            (r"JUVENTUD|JOVEN", "JOVENES"),
+            (r"ADULTEZ", "ADULTEZ"),
+            (r"VEJEZ", "VEJEZ"),
+            (r"TAMIZACI", "TAMIZACIONES"),
+            (r"HTA.*DM|ENFERMEDADES PRECURSORAS", "HTA-DM"),
+            (r"CARACTERIZACI.*FAMILIAR", "CARACTERIZACION FAMILIAR"),
+            (r"MATERNO|PERINATAL", "MATERNO PERINATAL"),
+            (r"SALUD MENTAL", "SALUD MENTAL"),
+            (r"RIESGO BAJO", "RCV RIESGO BAJO"),
+            (r"RIESGO MODERADO", "RCV RIESGO MODERADO"),
+            (r"RIESGO ALTO", "RCV RIESGO ALTO"),
+        ]:
+            if re.search(patron, linea, re.I):
+                grupo_actual = gid
+                break
+        # Detectar fila con CUPS (DI\d+ o I\d+ o \d{6})
+        m = re.match(r"(DI\d{4,5}[-\d]*|I\d{5,6}|\d{6,7})\s+(.+?)\s+(\d+)\s*$", linea)
+        if m:
+            cups, desc, meta_mes = m.group(1), m.group(2).strip(), int(m.group(3))
+            filas.append({"cups": cups, "descripcion": desc, "meta_mes": meta_mes, "grupo": grupo_actual})
+    return filas
+
+
+def _extraer_filas_excel(wb) -> list:
+    """Extrae filas de nota técnica Excel buscando columnas META MES / META/MES."""
+    import re
+    filas = []
+    for sheet in wb.worksheets:
+        rows = list(sheet.iter_rows(values_only=True))
+        if not rows:
+            continue
+        # Buscar fila cabecera con "META MES" o "META/MES"
+        header_idx = None
+        col_cups = col_desc = col_meta_mes = col_grupo = None
+        for i, row in enumerate(rows):
+            cells = [str(c or "").upper() for c in row]
+            for j, c in enumerate(cells):
+                if "META MES" in c or "META/MES" in c:
+                    col_meta_mes = j
+                if c in ("CUPS", "CÓDIGO", "CODIGO"):
+                    col_cups = j
+                if "DESCRIPCI" in c or "ACTIVIDAD" in c:
+                    col_desc = j
+            if col_meta_mes is not None:
+                header_idx = i
+                break
+        if header_idx is None or col_meta_mes is None:
+            continue
+        grupo_actual = ""
+        for row in rows[header_idx + 1:]:
+            if all(c is None or str(c).strip() == "" for c in row):
+                continue
+            # Detectar cambio de grupo
+            first = str(row[0] or row[1] if len(row) > 1 else "").upper()
+            for patron, gid in [
+                ("PRIMERA INFANCIA", "PRIMERA INFANCIA"),
+                ("INFANCIA", "INFANCIA"),
+                ("ADOLESCENCIA", "ADOLESCENCIA"),
+                ("JOVEN", "JOVENES"),
+                ("ADULTEZ", "ADULTEZ"),
+                ("VEJEZ", "VEJEZ"),
+                ("TAMIZACI", "TAMIZACIONES"),
+                ("HTA", "HTA-DM"),
+                ("CARACTERIZACI", "CARACTERIZACION FAMILIAR"),
+                ("MATERNO", "MATERNO PERINATAL"),
+                ("SALUD MENTAL", "SALUD MENTAL"),
+            ]:
+                if patron in first:
+                    grupo_actual = gid
+                    break
+            meta_val = row[col_meta_mes] if col_meta_mes < len(row) else None
+            try:
+                meta_mes = int(float(str(meta_val))) if meta_val not in (None, "") else None
+            except Exception:
+                meta_mes = None
+            if meta_mes is None:
+                continue
+            cups = str(row[col_cups]).strip() if col_cups is not None and col_cups < len(row) else ""
+            desc = str(row[col_desc]).strip() if col_desc is not None and col_desc < len(row) else ""
+            if cups or desc:
+                filas.append({"cups": cups, "descripcion": desc, "meta_mes": meta_mes, "grupo": grupo_actual})
+    return filas
+
+
 # ══════════════════════════════════════════════════════════════════════════
 # RUTAS USUARIOS
 # ══════════════════════════════════════════════════════════════════════════

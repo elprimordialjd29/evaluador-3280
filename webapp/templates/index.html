@@ -985,18 +985,32 @@ html.dark .it-btn.active{color:var(--azul2)}
 
       <!-- Metas Mensuales -->
       <div style="border-top:1px solid var(--gris1);padding-top:16px;margin-bottom:4px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <span style="font-size:14px">📈</span>
-          <div style="font-size:13px;font-weight:700;color:var(--azul)">Metas Mensuales — Servicios Asistenciales</div>
+          <div style="font-size:13px;font-weight:700;color:var(--azul)">Metas Mensuales — por Régimen</div>
           <div style="margin-left:auto;display:flex;gap:6px">
             <button class="btn btn-outline" style="font-size:11px;padding:4px 10px" onclick="toggleMetasManual()">✏️ Manual</button>
-            <label class="btn btn-outline" style="font-size:11px;padding:4px 10px;cursor:pointer;margin:0">
-              📎 Desde archivo
-              <input type="file" id="m-metas-file" accept=".xlsx,.xls,.txt,.pdf" style="display:none" onchange="cargarMetasArchivo(this)">
-            </label>
+            <button class="btn btn-outline" style="font-size:11px;padding:4px 10px;background:var(--azul4);border-color:var(--azul2);color:var(--azul2);font-weight:700" onclick="abrirPreviewMetas()">
+              📄 Cargar Nota Técnica
+            </button>
           </div>
         </div>
-        <!-- Resumen de metas cargadas -->
+        <!-- Tabs SUB / CONT -->
+        <div style="display:flex;gap:0;margin-bottom:10px;border-bottom:2px solid var(--gris1)">
+          <button id="mtab-sub" onclick="setMetaTab('SUB')"
+            style="padding:5px 16px;border:none;border-bottom:2px solid var(--azul);margin-bottom:-2px;background:none;font-size:11.5px;font-weight:700;color:var(--azul);cursor:pointer">
+            SUBSIDIADO
+          </button>
+          <button id="mtab-cont" onclick="setMetaTab('CONT')"
+            style="padding:5px 16px;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;font-size:11.5px;font-weight:700;color:var(--gris3);cursor:pointer">
+            CONTRIBUTIVO
+          </button>
+        </div>
+        <!-- Resumen de metas cargadas SUB -->
+        <div id="m-metas-resumen-sub" style="display:none;background:var(--azul4);border:1px solid var(--azul2);border-radius:8px;padding:8px 12px;font-size:11px;margin-bottom:8px;color:var(--azul)"></div>
+        <!-- Resumen de metas cargadas CONT -->
+        <div id="m-metas-resumen-cont" style="display:none;background:#fdf4ff;border:1px solid #c084fc;border-radius:8px;padding:8px 12px;font-size:11px;margin-bottom:8px;color:#7e22ce"></div>
+        <!-- Resumen legacy -->
         <div id="m-metas-resumen" style="display:none;background:var(--verde3);border:1px solid var(--verde2);border-radius:8px;padding:10px 14px;font-size:11.5px;margin-bottom:10px"></div>
         <!-- Tabla manual de metas -->
         <div id="m-metas-manual" style="display:none">
@@ -1009,6 +1023,87 @@ html.dark .it-btn.active{color:var(--azul2)}
     <div style="padding:14px 26px 20px;border-top:1px solid var(--gris1);display:flex;justify-content:flex-end;gap:10px">
       <button class="btn btn-outline" onclick="cerrarModal('modal-ips')">Cancelar</button>
       <button class="btn btn-primary" style="padding:8px 22px" onclick="guardarIPS()">💾 Guardar Prestador</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PREVIEW METAS NOTA TÉCNICA -->
+<div id="modal-preview-metas" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:20px 12px">
+  <div style="background:#fff;border-radius:16px;width:780px;max-width:99vw;box-shadow:0 20px 60px rgba(0,0,0,.25);margin:auto">
+    <div style="padding:18px 24px 14px;border-bottom:1px solid var(--gris1);display:flex;align-items:center;gap:10px">
+      <span style="font-size:20px">📋</span>
+      <div style="flex:1">
+        <div style="font-size:15px;font-weight:800;color:var(--azul)">Vista previa — Metas extraídas</div>
+        <div style="font-size:11px;color:var(--gris3)" id="pm-subtitle">Revisa y edita los valores antes de aplicar</div>
+      </div>
+      <button onclick="cerrarModal('modal-preview-metas')" style="background:none;border:none;font-size:18px;cursor:pointer;color:var(--gris3)">✕</button>
+    </div>
+
+    <!-- Tabs Régimen -->
+    <div style="padding:12px 24px 0;display:flex;gap:6px;border-bottom:1px solid var(--gris1)">
+      <button id="pm-tab-sub" onclick="pmSetTab('SUB')"
+        style="padding:6px 18px;border-radius:8px 8px 0 0;border:1.5px solid var(--azul2);border-bottom:none;background:var(--azul);color:#fff;font-size:12px;font-weight:700;cursor:pointer">
+        📋 SUBSIDIADO
+      </button>
+      <button id="pm-tab-cont" onclick="pmSetTab('CONT')"
+        style="padding:6px 18px;border-radius:8px 8px 0 0;border:1.5px solid var(--gris2);border-bottom:none;background:var(--gris0);color:var(--gris3);font-size:12px;font-weight:700;cursor:pointer">
+        📋 CONTRIBUTIVO
+      </button>
+      <div style="margin-left:auto;padding-bottom:8px">
+        <label style="font-size:11px;font-weight:600;color:var(--gris3);cursor:pointer;display:flex;align-items:center;gap:6px">
+          <input type="file" id="pm-file-input" accept=".pdf,.xlsx,.xls" style="display:none" onchange="pmCargarArchivo(this)">
+          <button onclick="document.getElementById('pm-file-input').click()" style="padding:4px 12px;border-radius:6px;border:1.5px dashed var(--azul2);background:var(--azul4);color:var(--azul2);font-size:11px;font-weight:700;cursor:pointer">
+            📎 Subir archivo
+          </button>
+        </label>
+      </div>
+    </div>
+
+    <div style="padding:16px 24px">
+      <!-- Estado de carga -->
+      <div id="pm-loading" style="display:none;text-align:center;padding:30px;color:var(--gris3)">
+        <div style="font-size:28px;margin-bottom:8px">⏳</div>
+        <div style="font-size:13px">Procesando archivo...</div>
+      </div>
+
+      <!-- Páginas PDF (si aplica) -->
+      <div id="pm-pdf-pages" style="display:none;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--azul);margin-bottom:8px">📄 Vista del documento — ingresa las metas en la tabla de abajo</div>
+        <div id="pm-pdf-imgs" style="max-height:340px;overflow-y:auto;border:1px solid var(--gris1);border-radius:8px;padding:4px;display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+
+      <!-- Tabla editable: Actividad | Meta/mes -->
+      <div id="pm-tabla-wrap">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:12px;font-weight:700;color:var(--azul)">Actividades y metas mensuales</span>
+          <button onclick="pmAgregarFila()" style="padding:2px 10px;border-radius:5px;border:none;background:var(--azul);color:#fff;font-size:11px;font-weight:700;cursor:pointer">+ Fila</button>
+        </div>
+        <div style="max-height:360px;overflow-y:auto;border:1px solid var(--gris1);border-radius:8px">
+          <table style="width:100%;border-collapse:collapse;font-size:11.5px">
+            <thead style="position:sticky;top:0;background:var(--azul);z-index:1">
+              <tr>
+                <th style="padding:7px 10px;text-align:left;color:#fff;font-weight:700;width:110px">CUPS</th>
+                <th style="padding:7px 10px;text-align:left;color:#fff;font-weight:700">Actividad / Descripción</th>
+                <th style="padding:7px 10px;text-align:left;color:#fff;font-weight:700;width:110px">Grupo / Ruta</th>
+                <th style="padding:7px 10px;text-align:center;color:#fff;font-weight:700;width:90px">Meta/mes</th>
+                <th style="padding:7px 10px;width:36px"></th>
+              </tr>
+            </thead>
+            <tbody id="pm-tbody"></tbody>
+          </table>
+        </div>
+        <div id="pm-empty" style="text-align:center;padding:32px;color:var(--gris3);font-size:12px">
+          Sube un archivo PDF o Excel de nota técnica para cargar las metas
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:14px 24px 18px;border-top:1px solid var(--gris1);display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:11px;color:var(--gris3)" id="pm-total-label"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline" onclick="cerrarModal('modal-preview-metas')">Cancelar</button>
+        <button class="btn btn-primary" onclick="pmAplicar()" style="padding:8px 22px">✅ Aplicar metas al prestador</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1513,6 +1608,184 @@ async function cargarMetasArchivo(input){
 }
 
 let _metas_archivo_pendiente=null;
+
+// ── TABS SUB / CONT en modal IPS ──────────────────────────────────────────
+let _metaTabActivo='SUB';
+function setMetaTab(tab){
+  _metaTabActivo=tab;
+  const s=document.getElementById('mtab-sub');
+  const c=document.getElementById('mtab-cont');
+  if(s){s.style.color=tab==='SUB'?'var(--azul)':'var(--gris3)';s.style.borderBottomColor=tab==='SUB'?'var(--azul)':'transparent';}
+  if(c){c.style.color=tab==='CONT'?'#7e22ce':'var(--gris3)';c.style.borderBottomColor=tab==='CONT'?'#7e22ce':'transparent';}
+  // Mostrar resumen del tab activo
+  document.getElementById('m-metas-resumen-sub').style.display=tab==='SUB'&&document.getElementById('m-metas-resumen-sub').innerHTML?'block':'none';
+  document.getElementById('m-metas-resumen-cont').style.display=tab==='CONT'&&document.getElementById('m-metas-resumen-cont').innerHTML?'block':'none';
+}
+
+// ── MODAL PREVIEW METAS ──────────────────────────────────────────────────
+let _pmTabActivo='SUB';
+let _pmFilasSub=[];   // [{cups, descripcion, grupo, meta_mes}]
+let _pmFilasCont=[];
+
+function abrirPreviewMetas(){
+  _pmTabActivo=_metaTabActivo||'SUB';
+  abrirModal('modal-preview-metas');
+  pmSetTab(_pmTabActivo);
+  pmRenderTabla();
+}
+
+function pmSetTab(tab){
+  _pmTabActivo=tab;
+  const bs=document.getElementById('pm-tab-sub');
+  const bc=document.getElementById('pm-tab-cont');
+  if(bs){bs.style.background=tab==='SUB'?'var(--azul)':'var(--gris0)';bs.style.color=tab==='SUB'?'#fff':'var(--gris3)';bs.style.borderColor=tab==='SUB'?'var(--azul2)':'var(--gris2)';}
+  if(bc){bc.style.background=tab==='CONT'?'#7e22ce':'var(--gris0)';bc.style.color=tab==='CONT'?'#fff':'var(--gris3)';bc.style.borderColor=tab==='CONT'?'#7e22ce':'var(--gris2)';}
+  document.getElementById('pm-subtitle').textContent=`Régimen ${tab==='SUB'?'SUBSIDIADO':'CONTRIBUTIVO'} — revisa y edita antes de aplicar`;
+  pmRenderTabla();
+}
+
+function pmGetFilas(){return _pmTabActivo==='SUB'?_pmFilasSub:_pmFilasCont;}
+function pmSetFilas(f){if(_pmTabActivo==='SUB') _pmFilasSub=f; else _pmFilasCont=f;}
+
+async function pmCargarArchivo(input){
+  const f=input.files[0];if(!f) return;
+  input.value='';
+  document.getElementById('pm-loading').style.display='block';
+  document.getElementById('pm-pdf-pages').style.display='none';
+  document.getElementById('pm-pdf-imgs').innerHTML='';
+  const fd=new FormData();fd.append('archivo',f);
+  let d;
+  try{
+    const r=await fetch('/api/extract-metas-preview',{method:'POST',body:fd});
+    d=await r.json();
+  }catch(e){alert('Error de red: '+e.message);document.getElementById('pm-loading').style.display='none';return;}
+  document.getElementById('pm-loading').style.display='none';
+  if(!d.ok){alert('Error: '+(d.error||'No se pudo procesar el archivo'));return;}
+  // Mostrar páginas PDF si aplica
+  if(d.paginas_b64&&d.paginas_b64.length){
+    const wrap=document.getElementById('pm-pdf-pages');
+    const imgs=document.getElementById('pm-pdf-imgs');
+    imgs.innerHTML=d.paginas_b64.map((b,i)=>`<img src="data:image/png;base64,${b}" style="width:100%;border-radius:4px;display:block" alt="Página ${i+1}">`).join('');
+    wrap.style.display='block';
+  }
+  // Poblar filas
+  if(d.filas&&d.filas.length){
+    pmSetFilas(d.filas);
+    pmRenderTabla();
+    document.getElementById('pm-subtitle').textContent=`${d.filas.length} actividades extraídas — régimen ${_pmTabActivo==='SUB'?'SUBSIDIADO':'CONTRIBUTIVO'}`;
+  } else if(!d.paginas_b64||!d.paginas_b64.length){
+    alert('No se encontraron metas en el archivo. Verifica que sea una nota técnica válida o agrega las filas manualmente.');
+  }
+}
+
+function pmRenderTabla(){
+  const filas=pmGetFilas();
+  const tbody=document.getElementById('pm-tbody');
+  const empty=document.getElementById('pm-empty');
+  const totalEl=document.getElementById('pm-total-label');
+  if(!filas.length){
+    tbody.innerHTML='';
+    empty.style.display='block';
+    totalEl.textContent='';
+    return;
+  }
+  empty.style.display='none';
+  tbody.innerHTML=filas.map((f,i)=>`<tr style="border-bottom:1px solid var(--gris1)">
+    <td style="padding:4px 8px">
+      <input value="${f.cups||''}" onchange="pmUpdateFila(${i},'cups',this.value)"
+        style="width:100%;font-size:11px;padding:2px 5px;border:1px solid var(--gris1);border-radius:4px;font-family:monospace">
+    </td>
+    <td style="padding:4px 8px">
+      <input value="${(f.descripcion||'').replace(/"/g,'&quot;')}" onchange="pmUpdateFila(${i},'descripcion',this.value)"
+        style="width:100%;font-size:11px;padding:2px 5px;border:1px solid var(--gris1);border-radius:4px">
+    </td>
+    <td style="padding:4px 8px">
+      <input value="${f.grupo||''}" onchange="pmUpdateFila(${i},'grupo',this.value)"
+        style="width:100%;font-size:10px;padding:2px 5px;border:1px solid var(--gris1);border-radius:4px;color:var(--gris3)">
+    </td>
+    <td style="padding:4px 8px;text-align:center">
+      <input type="number" min="0" value="${f.meta_mes??''}" onchange="pmUpdateFila(${i},'meta_mes',+this.value)"
+        style="width:72px;font-size:12px;font-weight:700;padding:2px 6px;border:1.5px solid var(--azul2);border-radius:4px;text-align:center;color:var(--azul)">
+    </td>
+    <td style="padding:4px;text-align:center">
+      <button onclick="pmQuitarFila(${i})" style="background:none;border:none;cursor:pointer;color:var(--gris3);font-size:13px" title="Quitar">🗑</button>
+    </td>
+  </tr>`).join('');
+  const total=filas.reduce((s,f)=>s+(+f.meta_mes||0),0);
+  totalEl.textContent=`${filas.length} actividades · Total meta/mes: ${total.toLocaleString('es-CO')}`;
+}
+
+function pmUpdateFila(i,campo,val){
+  const filas=pmGetFilas();
+  if(filas[i]) filas[i][campo]=val;
+}
+
+function pmQuitarFila(i){
+  const filas=pmGetFilas();
+  filas.splice(i,1);
+  pmSetFilas(filas);
+  pmRenderTabla();
+}
+
+function pmAgregarFila(){
+  const filas=pmGetFilas();
+  filas.push({cups:'',descripcion:'',grupo:'',meta_mes:0});
+  pmSetFilas(filas);
+  pmRenderTabla();
+  // Scroll al final
+  const tbody=document.getElementById('pm-tbody');
+  if(tbody.lastElementChild) tbody.lastElementChild.scrollIntoView({behavior:'smooth'});
+}
+
+function pmAplicar(){
+  // Guarda las filas como metas en el formato interno por CUPS
+  const filasSub=_pmFilasSub;
+  const filasCont=_pmFilasCont;
+  function filasAMetas(filas){
+    const m={};
+    for(const f of filas){
+      if(!f.cups||!(f.meta_mes>0)) continue;
+      // Mapear CUPS → programa+actividad desde config
+      const cups=f.cups.trim().toUpperCase();
+      if(!S.config) continue;
+      for(const prog of (S.config.programas||[])){
+        for(const aid of (prog.actividades||[])){
+          const act=S.config.actividades_base[aid];
+          if(act&&(act.cups||[]).map(c=>c.toUpperCase()).includes(cups)){
+            if(!m[prog.id]) m[prog.id]={};
+            m[prog.id][aid]={meta:+f.meta_mes};
+          }
+        }
+      }
+    }
+    return m;
+  }
+  // También guardar las filas "en bruto" para actividades que no mapeen
+  if(filasSub.length){
+    const metasMapeadas=filasAMetas(filasSub);
+    // Si no mapeó nada, guardar como lista plana en __raw
+    if(!Object.keys(metasMapeadas).length){
+      _metas_ips.__raw_sub=filasSub;
+    } else {
+      Object.assign(_metas_ips,metasMapeadas);
+    }
+    // Mostrar resumen
+    const totalSub=filasSub.reduce((s,f)=>s+(+f.meta_mes||0),0);
+    const elSub=document.getElementById('m-metas-resumen-sub');
+    if(elSub){elSub.innerHTML=`✅ <strong>SUBSIDIADO:</strong> ${filasSub.length} actividades — Meta total/mes: <strong>${totalSub.toLocaleString('es-CO')}</strong>`;elSub.style.display='block';}
+    _metas_archivo_sub=filasSub;
+  }
+  if(filasCont.length){
+    const totalCont=filasCont.reduce((s,f)=>s+(+f.meta_mes||0),0);
+    const elCont=document.getElementById('m-metas-resumen-cont');
+    if(elCont){elCont.innerHTML=`✅ <strong>CONTRIBUTIVO:</strong> ${filasCont.length} actividades — Meta total/mes: <strong>${totalCont.toLocaleString('es-CO')}</strong>`;elCont.style.display='block';}
+    _metas_archivo_cont=filasCont;
+  }
+  cerrarModal('modal-preview-metas');
+}
+
+let _metas_archivo_sub=null;
+let _metas_archivo_cont=null;
 
 function mostrarResumenMetas(metas){
   const html=Object.entries(metas).map(([p,v])=>`<span style="margin-right:12px"><strong>${p}:</strong> ${v}</span>`).join("");
