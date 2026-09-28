@@ -1329,6 +1329,10 @@ function iniciarEvalIPS(){
     if(el&&S.ips_activa[k==="empresa"?"nombre":k]) el.value=S.ips_activa[k==="empresa"?"nombre":k];
   });
   document.getElementById("rep_ips").value=S.ips_activa.rep_legal||"";
+  // Precargar metas del prestador en S.metas para que evaluarAhora() las use
+  if(S.ips_activa.metas&&Object.keys(S.ips_activa.metas).length){
+    S.metas=JSON.parse(JSON.stringify(S.ips_activa.metas));
+  }
   goEvaluar();
 }
 
@@ -1859,6 +1863,26 @@ function goStep(n){
       else w.querySelector(".ws-num").textContent=i;
     }
   });
+  // Al entrar al paso 2, pre-cargar metas del prestador activo si S.metas está vacío
+  if(n===2){
+    const metasIPS=S.ips_activa?.metas;
+    const hayMetasIPS=metasIPS&&Object.keys(metasIPS).length>0&&
+      Object.values(metasIPS).some(prog=>Object.values(prog||{}).some(v=>(v?.meta??v??0)>0));
+    if(hayMetasIPS&&(!S.metas||!Object.keys(S.metas).length)){
+      S.metas=JSON.parse(JSON.stringify(metasIPS));
+    }
+    if(S.metas&&Object.keys(S.metas).length){
+      // Mostrar indicador de metas pre-cargadas en la pestaña NT
+      const ntStatus=document.getElementById("nt-status");
+      const nProg=Object.keys(S.metas).length;
+      if(ntStatus&&!document.getElementById("nt-drop").classList.contains("loaded")){
+        ntStatus.innerHTML=`<div class="alert alert-success">✅ Metas cargadas desde el prestador (${nProg} programas). Puedes subir un xlsx para reemplazarlas.</div>`;
+      }
+      // Sincronizar en tab manual también
+      sincronizarMetasManual(S.metas);
+    }
+    if(!S.config) renderMetasManual();
+  }
 }
 
 async function subirRIPS(files,hint){
@@ -3495,7 +3519,16 @@ function leerMetasManual(){
 async function evaluarAhora(){
   const aTab=document.querySelector(".it-pane.active")?.id;
   let metas=S.metas;
+  // Fallback 1: metas del tab manual (si la pestaña activa es manual o S.metas vacío)
   if(aTab==="it-manual"||!metas||!Object.keys(metas).length) metas=leerMetasManual();
+  // Fallback 2: metas guardadas en el prestador
+  if(!metas||!Object.keys(metas).length){
+    const mi=S.ips_activa?.metas;
+    if(mi&&Object.keys(mi).length) metas=mi;
+  }
+  if(!metas||!Object.keys(metas).length){
+    alert("⚠️ Sin metas configuradas. Ingresa las metas del prestador o sube la herramienta xlsx.");return;
+  }
   const info=leerInfo();
   await fetch("/api/set-metas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({metas,info_acta:info})});
   const btn=document.getElementById("btn-evaluar");
@@ -3711,6 +3744,10 @@ function iniciarEvalIPSMant(id){
     if(el&&ip[k==="empresa"?"nombre":k]) el.value=ip[k==="empresa"?"nombre":k];
   });
   document.getElementById("rep_ips").value=ip.rep_legal||"";
+  // Precargar metas guardadas
+  if(ip.metas&&Object.keys(ip.metas).length){
+    S.metas=JSON.parse(JSON.stringify(ip.metas));
+  }
   goEvaluar();
 }
 
