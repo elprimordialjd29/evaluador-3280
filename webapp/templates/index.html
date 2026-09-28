@@ -1716,6 +1716,8 @@ async function pmCargarArchivo(input){
   document.getElementById('pm-loading').style.display='block';
   document.getElementById('pm-pdf-pages').style.display='none';
   document.getElementById('pm-pdf-imgs').innerHTML='';
+  const pmEmptyEl=document.getElementById('pm-empty');
+  if(pmEmptyEl){pmEmptyEl.style.display='none';pmEmptyEl.innerHTML='Sube un archivo PDF o Excel de nota técnica para cargar las metas';}
   const fd=new FormData();fd.append('archivo',f);
   let d;
   try{
@@ -1736,8 +1738,16 @@ async function pmCargarArchivo(input){
     pmSetFilas(d.filas);
     pmRenderTabla();
     document.getElementById('pm-subtitle').textContent=`${d.filas.length} actividades extraídas — régimen ${_pmTabActivo==='SUB'?'SUBSIDIADO':'CONTRIBUTIVO'}`;
-  } else if(!d.paginas_b64||!d.paginas_b64.length){
-    alert('No se encontraron metas en el archivo. Verifica que sea una nota técnica válida o agrega las filas manualmente.');
+  } else {
+    // Sin filas extraídas — PDF escaneado o sin columna META MES legible
+    const hayPags=d.paginas_b64&&d.paginas_b64.length;
+    const msg=document.getElementById('pm-empty');
+    if(msg){
+      msg.style.display='block';
+      msg.innerHTML=hayPags
+        ? '📄 PDF cargado como imagen. Revisa las páginas y agrega las metas manualmente con <strong>+ Fila</strong>.'
+        : '⚠️ No se pudieron extraer metas del archivo. Agrega las actividades manualmente con <strong>+ Fila</strong>.';
+    }
   }
 }
 
