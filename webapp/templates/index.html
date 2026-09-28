@@ -813,6 +813,29 @@ html.dark .it-btn.active{color:var(--azul2)}
         <div class="pr-card-header"><div class="pr-card-icon">📂</div><div><div class="pr-card-title">Programas de Salud</div><div class="pr-card-sub">Programas y número de actividades configuradas</div></div></div>
         <div style="padding:14px;display:flex;flex-wrap:wrap;gap:9px" id="progs-wrap"></div>
       </div>
+
+      <!-- ── RUTAS CRUZADAS (CIE-10) ── -->
+      <div class="pr-card" style="grid-column:1/-1">
+        <div class="pr-card-header">
+          <div class="pr-card-icon">🔀</div>
+          <div><div class="pr-card-title">Rutas Cruzadas — Diagnósticos CIE-10</div><div class="pr-card-sub">Códigos que determinan si un paciente pertenece a otra ruta. "Exacto": código completo. "Prefijo": empieza con (ej. E10 incluye E100, E101…)</div></div>
+          {% if current_user.rol == 'admin' %}
+          <button class="btn btn-primary" style="margin-left:auto;font-size:11px;padding:5px 11px" onclick="guardarRutasDiag()">💾 Guardar</button>
+          {% endif %}
+        </div>
+        <div style="overflow-x:auto">
+          <table class="users-table" id="rutas-diag-table">
+            <thead style="position:sticky;top:0;z-index:1">
+              <tr>
+                <th style="width:170px">Ruta</th>
+                <th>Códigos exactos <span style="font-weight:400;color:var(--gris3)">(separados por coma)</span></th>
+                <th style="width:220px">Prefijos <span style="font-weight:400;color:var(--gris3)">(separados por coma)</span></th>
+              </tr>
+            </thead>
+            <tbody id="rutas-diag-tbody"><tr><td colspan="3" style="text-align:center;padding:14px;color:var(--gris3)">Cargando...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -1096,6 +1119,7 @@ function hoy(){return new Date().toISOString().slice(0,10);}
 async function cargarConfig(){
   const r=await fetch("/api/config");
   S.config=await r.json();
+  _syncDxGruposFromConfig(S.config);
   renderMetasManual();
 }
 
@@ -3251,7 +3275,7 @@ async function cargarMant(){
   renderMantIPS(_ips_list);
   // Config (CUPS, Cursos de vida, finalidades)
   if(S.config) renderMantConfig(S.config);
-  else {const rc=await fetch("/api/config");S.config=await rc.json();renderMantConfig(S.config);}
+  else {const rc=await fetch("/api/config");S.config=await rc.json();_syncDxGruposFromConfig(S.config);renderMantConfig(S.config);}
 }
 
 function filtrarMant(q){
@@ -3376,6 +3400,21 @@ function renderMantConfig(cfg){
       <td><input type="text" value="${texto}" class="fin-desc form-control" style="padding:4px 8px;font-size:11.5px"></td>
       <td><button onclick="this.closest('tr').remove()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--gris3)" title="Eliminar">🗑</button></td>
     </tr>`;}).join("");
+
+  // ── Rutas cruzadas CIE-10 (editables) ────────────────────────────────────
+  const rdtb=document.getElementById("rutas-diag-tbody");
+  if(rdtb){
+    const rdMap=cfg.rutas_diag||{};
+    const rdOrden=['EMBARAZADA','PRECONCEPCIONAL','PLANIFICACION','DM','HIPERTENSION'];
+    rdtb.innerHTML=rdOrden.map(ruta=>{
+      const r=rdMap[ruta]||{label:ruta,exact:[],prefix:[]};
+      return `<tr data-ruta="${ruta}">
+        <td style="font-weight:700;font-size:12px">${r.label||ruta}</td>
+        <td><textarea class="form-control rd-exact" rows="2" style="font-size:11px;resize:vertical;width:100%">${(r.exact||[]).join(', ')}</textarea></td>
+        <td><textarea class="form-control rd-prefix" rows="2" style="font-size:11px;resize:vertical;width:100%">${(r.prefix||[]).join(', ')}</textarea></td>
+      </tr>`;
+    }).join("");
+  }
 
   // ── Programas (badges) ──────────────────────────────────────────────────
   const pw=document.getElementById("progs-wrap");
@@ -3610,6 +3649,26 @@ async function guardarCursosVida(){
   const r=await fetch("/api/config/cursos-vida",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({cursos_de_vida:updated})});
   const d=await r.json();
   if(d.ok){S.config=null;_mantLoaded=false;cargarMant();alert("✅ Cursos de vida guardados");}
+  else alert("Error: "+(d.error||"desconocido"));
+}
+
+async function guardarRutasDiag(){
+  const rows=document.querySelectorAll("#rutas-diag-tbody tr[data-ruta]");
+  const rutas_diag={};
+  const RUTA_LABELS={'EMBARAZADA':'🤰 Embarazada','PRECONCEPCIONAL':'📋 Preconcepcional','PLANIFICACION':'📅 Planificación Familiar','DM':'💊 Diabetes Mellitus','HIPERTENSION':'💓 Hipertensión'};
+  rows.forEach(tr=>{
+    const ruta=tr.dataset.ruta;
+    const exactRaw=tr.querySelector('.rd-exact').value.trim();
+    const prefixRaw=tr.querySelector('.rd-prefix').value.trim();
+    rutas_diag[ruta]={
+      label:RUTA_LABELS[ruta]||ruta,
+      exact:exactRaw?exactRaw.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean):[],
+      prefix:prefixRaw?prefixRaw.split(',').map(s=>s.trim().toUpperCase()).filter(Boolean):[]
+    };
+  });
+  const r=await fetch("/api/config/rutas-diag",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({rutas_diag})});
+  const d=await r.json();
+  if(d.ok){S.config=null;_mantLoaded=false;cargarMant();alert("✅ Rutas CIE-10 guardadas");}
   else alert("Error: "+(d.error||"desconocido"));
 }
 
@@ -4071,13 +4130,22 @@ function dashCargarRIPS(files,tipo){
 }
 
 // Clasificación por diagnóstico (Ruta Materna, RCV)
-const _DX_GRUPOS={
+// Se sobrescribe con el config al cargar si S.config.rutas_diag está disponible
+let _DX_GRUPOS={
   EMBARAZADA:{exact:new Set(['Z321','Z33X','Z340','Z341','Z342','Z343','Z344','Z345','Z346','Z347','Z348','Z349','Z350','Z351','Z352','Z353','Z354','Z355','Z356','Z357','Z358','Z359'])},
   PRECONCEPCIONAL:{exact:new Set(['Z316','Z318','Z319'])},
   PLANIFICACION:{exact:new Set(['Z309','Z300','Z304'])},
   DM:{prefix:['E10','E11','E12','E13','E14'],exact:new Set(['E232','N251'])},
   HIPERTENSION:{prefix:[],exact:new Set(['G932','I10X','I150','I151','I152','I158','I159','I270','I272','K766','O100','O104','O109','O13X','O16X','P292','R030'])},
 };
+function _syncDxGruposFromConfig(cfg){
+  if(!cfg||!cfg.rutas_diag) return;
+  const m={};
+  for(const[ruta,r] of Object.entries(cfg.rutas_diag)){
+    m[ruta]={exact:new Set(r.exact||[]),prefix:r.prefix||[]};
+  }
+  if(Object.keys(m).length) Object.assign(_DX_GRUPOS,m);
+}
 function _getDxGrupos(dx){
   if(!dx) return[];
   const d=dx.trim().toUpperCase();

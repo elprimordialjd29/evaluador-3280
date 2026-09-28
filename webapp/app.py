@@ -320,7 +320,8 @@ def api_config():
     with open(CONFIG_PATH, encoding="utf-8") as f:
         cfg = json.load(f)
     return jsonify({"programas": cfg["programas"], "actividades_base": cfg["actividades_base"],
-                    "cursos_de_vida": cfg["cursos_de_vida"], "finalidades": cfg.get("finalidades", {})})
+                    "cursos_de_vida": cfg["cursos_de_vida"], "finalidades": cfg.get("finalidades", {}),
+                    "rutas_diag": cfg.get("rutas_diag", {})})
 
 # ══════════════════════════════════════════════════════════════════════════
 # RUTAS PRESTADORES (IPS)
@@ -1436,6 +1437,18 @@ def update_finalidades():
     body = request.get_json() or {}
     cfg = _load_config_mutable()
     cfg["finalidades"] = body.get("finalidades", cfg.get("finalidades", {}))
+    _save_config(cfg)
+    return jsonify({"ok": True})
+
+@app.route("/api/config/rutas-diag", methods=["POST"])
+@login_required
+def update_rutas_diag():
+    user = _get_current_user()
+    if user.rol != "admin":
+        return jsonify({"error": "Sin permisos"}), 403
+    body = request.get_json() or {}
+    cfg = _load_config_mutable()
+    cfg["rutas_diag"] = body.get("rutas_diag", cfg.get("rutas_diag", {}))
     _save_config(cfg)
     return jsonify({"ok": True})
 
