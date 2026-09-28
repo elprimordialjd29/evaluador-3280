@@ -403,6 +403,29 @@ def update_ips(ips_id):
             return jsonify({"ok": True})
     return jsonify({"error": "No encontrado"}), 404
 
+@app.route("/api/ips/<ips_id>", methods=["DELETE"])
+@login_required
+def delete_ips(ips_id):
+    user = _get_current_user()
+    if user.rol not in ["admin", "evaluador"]:
+        return jsonify({"error": "Sin permisos"}), 403
+    sb = _get_sb()
+    if sb:
+        try:
+            sb.table("metas").delete().eq("prestador_id", ips_id).execute()
+            sb.table("prestadores").delete().eq("id", ips_id).execute()
+            return jsonify({"ok": True})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    # Fallback local
+    ips_list = _load_ips()
+    nueva = [ip for ip in ips_list if ip["id"] != ips_id]
+    if len(nueva) == len(ips_list):
+        return jsonify({"error": "No encontrado"}), 404
+    _save_ips(nueva)
+    return jsonify({"ok": True})
+
+
 @app.route("/api/ips/<ips_id>/metas", methods=["POST"])
 @login_required
 def set_metas_ips(ips_id):

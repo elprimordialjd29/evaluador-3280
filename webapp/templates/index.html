@@ -3815,9 +3815,37 @@ function verDetalleMant(id,event){
               <div style="font-size:10.5px;color:var(--gris3);margin-top:1px">Modificar datos, metas y vigencia</div>
             </div>
           </button>
+          <button onclick="eliminarIPS('${ip.id}','${ip.nombre.replace(/'/g,'\\'')}')"
+            style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:12px;border:1.5px solid #fca5a5;background:var(--card-bg);color:#dc2626;cursor:pointer;text-align:left;transition:background .15s"
+            onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='var(--card-bg)'">
+            <div style="width:36px;height:36px;border-radius:9px;background:#fee2e2;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🗑️</div>
+            <div>
+              <div style="font-size:13px;font-weight:700">Eliminar Prestador</div>
+              <div style="font-size:10.5px;color:#f87171;margin-top:1px">Borrar este prestador y sus metas</div>
+            </div>
+          </button>
         </div>
       </div>
     </div>`;
+}
+
+async function eliminarIPS(id, nombre){
+  const ok = confirm(`⚠️ ¿Eliminar el prestador "${nombre}"?\n\nEsta acción borrará el prestador y todas sus metas. No se puede deshacer.`);
+  if(!ok) return;
+  try{
+    const r = await fetch(`/api/ips/${id}`, {method:'DELETE'});
+    const d = await r.json();
+    if(!d.ok) throw new Error(d.error||'Error desconocido');
+    // Remover de la lista local
+    _ips_list = _ips_list.filter(ip=>ip.id!==id);
+    // Volver al listado
+    document.getElementById('pl-detail').style.display='none';
+    document.getElementById('pl-list').style.display='block';
+    renderListaIPS();
+    alert(`✅ Prestador "${nombre}" eliminado correctamente.`);
+  } catch(e){
+    alert('Error al eliminar: '+e.message);
+  }
 }
 
 function iniciarEvalIPSMant(id){
