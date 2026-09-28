@@ -707,10 +707,23 @@ html.dark .it-btn.active{color:var(--azul2)}
     <div class="panel-right" style="overflow-y:auto">
       <div id="mant-detalle-wrap">
         <div class="pr-card">
-          <div class="pr-card-body" style="text-align:center;padding:52px 20px;color:var(--gris3)">
-            <div style="font-size:40px;margin-bottom:12px">🏥</div>
-            <div style="font-size:13.5px;font-weight:600;margin-bottom:5px">Selecciona un prestador</div>
-            <div style="font-size:12px">Haz clic en un prestador para ver y gestionar sus contratos.</div>
+          <div class="pr-card-body" style="text-align:center;padding:60px 20px">
+            <div style="margin-bottom:18px;display:inline-block">
+              <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="80" height="80" rx="20" fill="var(--azul4)"/>
+                <rect x="18" y="28" width="44" height="36" rx="3" fill="var(--azul3)" stroke="var(--azul2)" stroke-width="1.5"/>
+                <rect x="26" y="44" width="10" height="20" rx="2" fill="var(--azul2)" opacity=".5"/>
+                <rect x="44" y="44" width="10" height="20" rx="2" fill="var(--azul2)" opacity=".5"/>
+                <rect x="32" y="30" width="16" height="10" rx="2" fill="var(--azul2)" opacity=".7"/>
+                <path d="M14 30 Q40 18 66 30" stroke="var(--azul2)" stroke-width="2" fill="none" stroke-linecap="round"/>
+                <rect x="36" y="20" width="8" height="10" rx="1" fill="var(--azul2)"/>
+                <!-- Cruz -->
+                <rect x="37" y="35" width="6" height="14" rx="1.5" fill="#fff"/>
+                <rect x="33" y="39" width="14" height="6" rx="1.5" fill="#fff"/>
+              </svg>
+            </div>
+            <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Selecciona un prestador</div>
+            <div style="font-size:12.5px;color:var(--gris3);max-width:260px;margin:0 auto;line-height:1.6">Haz clic en un prestador de la lista para ver sus datos, evaluar o editar el contrato.</div>
           </div>
         </div>
       </div>
@@ -3303,26 +3316,58 @@ function verDetalleMant(id,event){
   const ip=_ips_list.find(i=>i.id==id);if(!ip) return;
   const regColor=ip.regimen==="SUBSIDIADO"?"reg-sub":"reg-cont";
   document.getElementById("mant-detalle-wrap").innerHTML=`
-    <div class="pr-card" style="margin-bottom:14px">
-      <div class="pr-card-header">
-        <div class="pr-card-icon">🏥</div>
-        <div style="flex:1">
-          <div class="pr-card-title">${ip.nombre}</div>
-          <div class="pr-card-sub">NIT: ${ip.nit||'—'} · ${ip.municipio||'—'}</div>
+    <div class="pr-card" style="margin-bottom:14px;overflow:hidden">
+      <!-- Encabezado con gradiente -->
+      <div style="background:linear-gradient(135deg,#1E3A5F 0%,#2D5282 100%);padding:18px 20px;display:flex;align-items:center;gap:14px">
+        <div style="width:48px;height:48px;border-radius:12px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="3" y="10" width="22" height="16" rx="2" fill="white" opacity=".9"/><path d="M5 10 Q14 4 23 10" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/><rect x="8" y="16" width="4" height="10" rx="1" fill="#2D5282"/><rect x="16" y="16" width="4" height="10" rx="1" fill="#2D5282"/><rect x="11" y="11" width="6" height="4" rx="1" fill="#2D5282"/><rect x="12.5" y="12.5" width="3" height="6" rx=".8" fill="white"/><rect x="11" y="14.5" width="6" height="3" rx=".8" fill="white"/></svg>
         </div>
-        <span class="nav-badge" style="background:var(--azul4);color:var(--azul)">${ip.num_actas||0} actas</span>
-        <button class="btn btn-primary" style="font-size:11px;padding:5px 12px;margin-left:8px" onclick="iniciarEvalIPSMant('${ip.id}')">⚡ Evaluar</button>
-        <button class="btn btn-outline" style="font-size:11px;padding:5px 12px" onclick="abrirModal('modal-ips');llenarModalIPS('${ip.id}')">✏️</button>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:15px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ip.nombre}</div>
+          <div style="font-size:11.5px;color:#93C5FD;margin-top:2px">NIT: ${ip.nit||'—'} &nbsp;·&nbsp; ${ip.municipio||'—'}, ${ip.departamento||''}</div>
+        </div>
+        <span style="background:rgba(255,255,255,.18);color:#E0F2FE;font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;white-space:nowrap">${ip.num_actas||0} actas</span>
       </div>
-      <div class="pr-card-body" style="padding:10px 16px">
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px">
-          <div style="background:var(--gris0);border-radius:8px;padding:10px;border:1px solid var(--gris1)"><div style="font-size:10px;color:var(--gris3);font-weight:600;text-transform:uppercase">Contrato</div><div style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:3px">${ip.num_contrato||'—'}</div></div>
-          <div style="background:var(--gris0);border-radius:8px;padding:10px;border:1px solid var(--gris1)"><div style="font-size:10px;color:var(--gris3);font-weight:600;text-transform:uppercase">Régimen</div><div style="margin-top:3px"><span class="reg-tag ${regColor}">${ip.regimen||'—'}</span></div></div>
-          <div style="background:var(--gris0);border-radius:8px;padding:10px;border:1px solid var(--gris1)"><div style="font-size:10px;color:var(--gris3);font-weight:600;text-transform:uppercase">Rep. Legal</div><div style="font-size:11.5px;font-weight:600;color:var(--text);margin-top:3px">${ip.rep_legal||'—'}</div></div>
-          <div style="background:var(--gris0);border-radius:8px;padding:10px;border:1px solid var(--gris1)"><div style="font-size:10px;color:var(--gris3);font-weight:600;text-transform:uppercase">Creado por</div><div style="font-size:11.5px;font-weight:600;color:var(--text);margin-top:3px">${ip.creado_por||'—'}</div></div>
+      <!-- Fichas de datos -->
+      <div style="padding:14px 16px">
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
+          <div style="background:var(--gris0);border-radius:10px;padding:11px 13px;border:1px solid var(--gris1)">
+            <div style="font-size:9.5px;color:var(--gris3);font-weight:700;text-transform:uppercase;letter-spacing:.06em">N° Contrato</div>
+            <div style="font-size:13px;font-weight:800;color:var(--azul);margin-top:4px">${ip.num_contrato||'—'}</div>
+          </div>
+          <div style="background:var(--gris0);border-radius:10px;padding:11px 13px;border:1px solid var(--gris1)">
+            <div style="font-size:9.5px;color:var(--gris3);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Régimen</div>
+            <div style="margin-top:4px"><span class="reg-tag ${regColor}">${ip.regimen||'—'}</span></div>
+          </div>
+          <div style="background:var(--gris0);border-radius:10px;padding:11px 13px;border:1px solid var(--gris1)">
+            <div style="font-size:9.5px;color:var(--gris3);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Rep. Legal</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">${ip.rep_legal||'—'}</div>
+          </div>
+          <div style="background:var(--gris0);border-radius:10px;padding:11px 13px;border:1px solid var(--gris1)">
+            <div style="font-size:9.5px;color:var(--gris3);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Tipo contrato</div>
+            <div style="font-size:12px;font-weight:600;color:var(--text);margin-top:4px">${ip.tipo_contrato||'—'}</div>
+          </div>
         </div>
-        <div style="border-top:1px solid var(--gris1);padding-top:10px;color:var(--gris3);font-size:12px;text-align:center;font-style:italic">
-          Historial de actas: ${ip.num_actas||0} actas generadas para este prestador.
+        <!-- Botones de acción modernos -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button onclick="iniciarEvalIPSMant('${ip.id}')"
+            style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:12px;border:none;background:linear-gradient(135deg,#1E40AF,#2563EB);color:#fff;cursor:pointer;text-align:left;transition:opacity .15s"
+            onmouseover="this.style.opacity='.88'" onmouseout="this.style.opacity='1'">
+            <div style="width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">⚡</div>
+            <div>
+              <div style="font-size:13px;font-weight:700">Iniciar Evaluación</div>
+              <div style="font-size:10.5px;opacity:.8;margin-top:1px">Cargar RIPS y auditar actividades</div>
+            </div>
+          </button>
+          <button onclick="abrirModal('modal-ips');llenarModalIPS('${ip.id}')"
+            style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-radius:12px;border:1.5px solid var(--gris1);background:var(--card-bg);color:var(--text);cursor:pointer;text-align:left;transition:background .15s"
+            onmouseover="this.style.background='var(--gris0)'" onmouseout="this.style.background='var(--card-bg)'">
+            <div style="width:36px;height:36px;border-radius:9px;background:var(--azul4);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">✏️</div>
+            <div>
+              <div style="font-size:13px;font-weight:700">Editar Prestador</div>
+              <div style="font-size:10.5px;color:var(--gris3);margin-top:1px">Modificar datos, metas y vigencia</div>
+            </div>
+          </button>
         </div>
       </div>
     </div>`;
