@@ -189,32 +189,43 @@ def _save_actas(actas):
         with open(ACTAS_FILE, "w", encoding="utf-8") as f:
             json.dump(actas, f, ensure_ascii=False, indent=2)
 
+def _extraer_meta_val(valor) -> float:
+    """Extrae el valor numérico de meta desde un dict {meta, upc} o un número."""
+    if isinstance(valor, dict):
+        return float(valor.get("meta", valor.get("meta_upc", 0)) or 0)
+    try:
+        return float(valor) if valor else 0.0
+    except (TypeError, ValueError):
+        return 0.0
+
 def _guardar_metas_supabase(prestador_id: str, metas: dict):
     """Guarda metas en tabla metas de Supabase (upsert por prestador+programa+actividad)."""
     sb = _get_sb()
     if not sb: return
     try:
-        # Borrar metas anteriores de este prestador y reinsertar
         sb.table("metas").delete().eq("prestador_id", prestador_id).execute()
         rows = []
         for prog_id, acts in metas.items():
             if not isinstance(acts, dict): continue
             for act_id, valor in acts.items():
+                meta_val = _extraer_meta_val(valor)
+                if meta_val <= 0:
+                    continue  # no guardar filas en cero
                 rows.append({
                     "id": str(uuid.uuid4()),
                     "prestador_id": prestador_id,
                     "programa_id": prog_id,
                     "actividad_id": act_id,
-                    "meta_upc": float(valor) if valor else 0,
+                    "meta_upc": meta_val,
                     "activo": True
                 })
         if rows:
             sb.table("metas").insert(rows).execute()
-    except Exception:
-        pass
+    except Exception as e:
+        import traceback; traceback.print_exc()
 
 def _cargar_metas_supabase(prestador_id: str) -> dict:
-    """Carga metas desde Supabase para un prestador."""
+    """Carga metas desde Supabase para un prestador. Retorna {prog: {act: {meta: N}}}."""
     sb = _get_sb()
     if not sb: return {}
     try:
@@ -223,7 +234,8 @@ def _cargar_metas_supabase(prestador_id: str) -> dict:
         for r in rows:
             prog = r["programa_id"]
             act  = r["actividad_id"]
-            metas.setdefault(prog, {})[act] = r.get("meta_upc", 0)
+            val  = float(r.get("meta_upc", 0) or 0)
+            metas.setdefault(prog, {})[act] = {"meta": val, "upc": 0}
         return metas
     except Exception:
         return {}
@@ -361,6 +373,8 @@ def create_ips():
     }
     ips_list.append(new_ips)
     _save_ips(ips_list)
+    if new_ips.get("metas"):
+        _guardar_metas_supabase(new_ips["id"], new_ips["metas"])
     return jsonify({"ok": True, "ips": new_ips})
 
 @app.route("/api/ips/<ips_id>", methods=["PUT"])
@@ -376,6 +390,8 @@ def update_ips(ips_id):
             for k in ["nombre","nit","departamento","municipio","num_contrato","vigencia_inicio","vigencia_fin","rep_legal","regimen","tipo_contrato","lma","metas"]:
                 if k in body: ips[k] = body[k]
             _save_ips(ips_list)
+            if "metas" in body and body["metas"]:
+                _guardar_metas_supabase(ips_id, body["metas"])
             return jsonify({"ok": True})
     return jsonify({"error": "No encontrado"}), 404
 
