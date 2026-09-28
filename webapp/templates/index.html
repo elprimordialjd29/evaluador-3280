@@ -1328,12 +1328,20 @@ function seleccionarIPS(id,cid,event){
 
 function iniciarEvalIPS(){
   if(!S.ips_activa) return;
+  // Verificar metas antes de permitir evaluar
+  const metasActivas=_contarMetasActivas(S.ips_activa.metas||{});
+  if(metasActivas===0){
+    alert(`⚠️ "${S.ips_activa.nombre}" no tiene metas configuradas.\n\nDebes configurar las metas en Mantenimiento → Prestadores → Editar antes de evaluar.`);
+    // Abrir modal de edición
+    llenarModalIPS(S.ips_activa.id);
+    abrirModal("modal-ips");
+    return;
+  }
   ["empresa","nit","num_contrato","regimen","municipio"].forEach(k=>{
     const el=document.getElementById(k);
     if(el&&S.ips_activa[k==="empresa"?"nombre":k]) el.value=S.ips_activa[k==="empresa"?"nombre":k];
   });
   document.getElementById("rep_ips").value=S.ips_activa.rep_legal||"";
-  // Precargar metas del prestador en S.metas para que evaluarAhora() las use
   if(S.ips_activa.metas&&Object.keys(S.ips_activa.metas).length){
     S.metas=JSON.parse(JSON.stringify(S.ips_activa.metas));
   }
@@ -1361,6 +1369,17 @@ async function guardarIPS(){
   if(document.getElementById("m-metas-manual").style.display!=="none"){
     const {metas,lma}=leerMetasModal();
     _metas_ips=metas;_lma_ips=lma;
+  }
+  // Validar que haya al menos una meta configurada
+  const nMetas=_contarMetasActivas(_metas_ips);
+  if(nMetas===0){
+    const ok=confirm("⚠️ Este prestador no tiene metas configuradas.\n\nSin metas no podrás evaluar. ¿Deseas configurar las metas antes de guardar?\n\nPresiona Cancelar para ir a configurar metas, o Aceptar para guardar sin metas (podrás agregarlas después).");
+    if(!ok){
+      // Abrir tabla de metas si no está visible
+      const mm=document.getElementById("m-metas-manual");
+      if(mm.style.display==="none"){toggleMetasManual();}
+      return;
+    }
   }
   const body={
     nombre:v("m-nombre"),nit:v("m-nit"),departamento:v("m-depto"),
@@ -3779,12 +3798,17 @@ function verDetalleMant(id,event){
 function iniciarEvalIPSMant(id){
   const ip=_ips_list.find(i=>i.id==id);if(!ip) return;
   S.ips_activa=ip;
+  const metasActivas=_contarMetasActivas(ip.metas||{});
+  if(metasActivas===0){
+    alert(`⚠️ "${ip.nombre}" no tiene metas configuradas.\n\nConfigura las metas antes de evaluar.`);
+    llenarModalIPS(id);abrirModal("modal-ips");
+    return;
+  }
   ["empresa","nit","num_contrato","regimen","municipio"].forEach(k=>{
     const el=document.getElementById(k);
     if(el&&ip[k==="empresa"?"nombre":k]) el.value=ip[k==="empresa"?"nombre":k];
   });
   document.getElementById("rep_ips").value=ip.rep_legal||"";
-  // Precargar metas guardadas
   if(ip.metas&&Object.keys(ip.metas).length){
     S.metas=JSON.parse(JSON.stringify(ip.metas));
   }
