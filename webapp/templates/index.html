@@ -1314,7 +1314,7 @@ function renderMetasTabla(){
           <thead style="position:sticky;top:0;background:var(--gris0);z-index:1">
             <tr>
               <th style="text-align:left;padding:4px 8px;font-weight:600;border-bottom:1px solid var(--gris1)">Descripción</th>
-              <th style="padding:4px 8px;text-align:center;border-bottom:1px solid var(--gris1);white-space:nowrap">Meta</th>
+              <th style="padding:4px 8px;text-align:center;border-bottom:1px solid var(--gris1);white-space:nowrap">Meta/mes</th>
               <th style="padding:4px 8px;text-align:right;border-bottom:1px solid var(--gris1);white-space:nowrap">UPC ($)</th>
               <th style="padding:4px 8px;text-align:right;border-bottom:1px solid var(--gris1);white-space:nowrap">Valor Meta ($)</th>
               <th style="padding:4px 8px;border-bottom:1px solid var(--gris1);text-align:center">
@@ -1906,6 +1906,16 @@ async function preevaluar(){
       }
       window._pacienteMetaGlobal=_pmg;
       conteos=_preAgregar(archivos,usuariosGrupos,fechaNacPorPac);
+      // Detectar meses distintos cargados en RIPS (para metas mensuales)
+      const _mesesSet=new Set();
+      const _FECHA_KEYS={consultas:'fechaInicioAtencion',procedimientos:'fechaInicioAtencion',medicamentos:'fechaDispensacionMedicamento',otrosServicios:'fechaInicioAtencion'};
+      for(const[arch,fkey] of Object.entries(_FECHA_KEYS)){
+        for(const r of(archivos[arch]||[])){
+          const f=(r[fkey]||'').trim();
+          if(f.length>=7){const ym=f.slice(0,7).replace(/(\d{4})(\d{2})/,'$1-$2');if(/^\d{4}-\d{2}$/.test(ym)) _mesesSet.add(ym);}
+        }
+      }
+      window._mesesRips=_mesesSet.size||1;
     }catch(err){
       st.textContent="❌ Error JS: "+err.message;
       console.error("_preAgregar falló:",err);
@@ -1923,12 +1933,14 @@ async function preevaluar(){
     d=await r.json();
   }catch(err){st.textContent="❌ Error red: "+err.message;goStep(3);return;}
   if(!d.ok){st.textContent="❌ Error API: "+d.error;goStep(3);return;}
-  st.textContent=`✅ ${Object.keys(d.resultados).length} programas · ${d.total_usuarios} usuarios`;
+  const _nm=window._mesesRips||1;
+  st.textContent=`✅ ${Object.keys(d.resultados).length} programas · ${d.total_usuarios} usuarios · ${_nm} mes${_nm!==1?'es':''} de RIPS`;
   renderPreeval(d);
   goStep(3);
 }
 
 let _preevalDatos=null;
+window._mesesRips=1;
 let _preevalConFin=true; // true = con finalidad (coincide con Excel "ACTIVIDAD CONCLUIDA")
 const _preevalSumarSinFin=new Set(); // actividades donde el usuario eligió sumar los sin-finalidad
 
@@ -2431,7 +2443,9 @@ function abrirModalAuditoria(){
       }
       // META, DISCORDANCIA, % CUMPLIMIENTO
       const metaObj2=(S.metas?.[prog]?.[aid])||(_metas_ips?.[prog]?.[aid])||null;
-      const metaVal2=metaObj2?+(metaObj2.meta??metaObj2)||0:0;
+      const metaMes2=metaObj2?+(metaObj2.meta??metaObj2)||0:0;
+      const _nm2=window._mesesRips||1;
+      const metaVal2=metaMes2>0?metaMes2*_nm2:0;
       // Pacientes incluidos manualmente para esta actividad
       const _pvKey2=prog+'|'+aid;
       const nValidados=(window._pacientesValidados&&window._pacientesValidados[_pvKey2])?window._pacientesValidados[_pvKey2].size:0;
@@ -2441,6 +2455,7 @@ function abrirModalAuditoria(){
       const disc2=metaVal2>0?Math.max(0,metaVal2-conc2):0;
       const pct2=metaVal2>0?(conc2>=metaVal2?1:conc2/metaVal2):1;
       const pctStr2=pct2>=1?`<span style="color:#059669;font-weight:700">100%</span>`:`<span style="color:${pct2>=0.9?'#D97706':'#DC2626'};font-weight:700">${(pct2*100).toFixed(1)}%</span>`;
+      const metaLbl2=metaMes2>0&&_nm2>1?`${metaMes2}/mes×${_nm2}=${metaVal2}`:metaVal2>0?metaVal2.toLocaleString('es-CO'):'0';
       // Rutas cruzadas — se omiten para Demanda Inducida (es su propósito enrutar)
       const hayRutas=!esDI&&!!(act.ruta_audit&&Object.keys(act.ruta_audit).length);
       const hayRegistros=total>0;
@@ -2451,7 +2466,7 @@ function abrirModalAuditoria(){
           <div style="font-weight:${sinRegistros?'400':'600'};color:${sinRegistros?'#9CA3AF':'#111827'};line-height:1.3">${act.descripcion||''}</div>
           <div style="font-size:9px;color:#9CA3AF;margin-top:1px">${ARCH_LBL3[act.archivo]||act.archivo||''}${sinRegistros?' · Sin registros en RIPS':''}</div>
         </td>
-        <td style="padding:7px 8px;text-align:center;font-weight:700;color:${metaVal2>0?'#1d4ed8':'#6B7280'}">${metaVal2>0?metaVal2.toLocaleString('es-CO'):'0'}</td>
+        <td style="padding:7px 8px;text-align:center;font-weight:700;color:${metaVal2>0?'#1d4ed8':'#6B7280'}">${metaLbl2}</td>
         <td style="padding:7px 8px;text-align:center;font-weight:700;color:${conc2>0?'#059669':'#9CA3AF'}">
           ${sinRegistros?'—':conc2.toLocaleString('es-CO')}
           ${nValidados>0?`<div style="font-size:8px;color:#166534;font-weight:600;margin-top:1px;white-space:nowrap">+${nValidados} incluido${nValidados!==1?'s':''}</div>`:''}
@@ -2602,10 +2617,11 @@ async function exportarPacientesError(btn){
       for(const[aid,act] of Object.entries(datos.actividades||{})){
         // ── FALTANTES: actividades bajo la meta ────────────────────────────
         const metaObj=(S.metas?.[prog]?.[aid])||(_metas_ips?.[prog]?.[aid])||null;
-        const metaVal=metaObj?+(metaObj.meta||metaObj)||0:0;
+        const metaMes_f=metaObj?+(metaObj.meta||metaObj)||0:0;
+        const metaVal=metaMes_f>0?metaMes_f*(window._mesesRips||1):0;
         const conc=act.tiene_finalidad?(act.encontrados_fin||0):(act.encontrados||0);
         if(metaVal>0&&conc<metaVal){
-          faltantes.push({descripcion:act.descripcion||aid,cups:(act.cups||[]).join(', '),archivo:act.archivo||'',meta:metaVal,conciliada:conc,discordancia:metaVal-conc,pctCumpl:Math.round(conc/metaVal*100)});
+          faltantes.push({descripcion:act.descripcion||aid,cups:(act.cups||[]).join(', '),archivo:act.archivo||'',meta:metaVal,metaMes:metaMes_f,nMeses:window._mesesRips||1,conciliada:conc,discordancia:metaVal-conc,pctCumpl:Math.round(conc/metaVal*100)});
         }
         // ── PACIENTES CON ERROR DE FINALIDAD ──────────────────────────────
         if(!act.tiene_finalidad) continue;
@@ -2781,8 +2797,10 @@ function renderPreeval(d){
   };
   const body=document.getElementById("preeval-body");
   // Cabecera: usuarios + cobertura
+  const _nmR=window._mesesRips||1;
   let html=`<div style="margin-bottom:10px;display:flex;gap:12px;flex-wrap:wrap;align-items:center">
-    <div class="stat-card" style="flex:1;min-width:120px"><div class="sc-label">Usuarios</div><div class="sc-val">${(d.total_usuarios||0).toLocaleString("es-CO")}</div></div>`;
+    <div class="stat-card" style="flex:1;min-width:120px"><div class="sc-label">Usuarios</div><div class="sc-val">${(d.total_usuarios||0).toLocaleString("es-CO")}</div></div>
+    <div class="stat-card" style="min-width:100px;background:${_nmR>1?'var(--verde3)':'var(--azul4)'};border-color:${_nmR>1?'var(--verde2)':'var(--azul2)'}"><div class="sc-label" style="color:${_nmR>1?'var(--verde)':'var(--azul2)'}">Meses RIPS</div><div class="sc-val" style="color:${_nmR>1?'var(--verde)':'var(--azul2)'}">${_nmR}</div></div>`;
   {const COB_ORDEN2=['PRIMERA_INFANCIA','INFANCIA','ADOLESCENCIA','JOVENES','ADULTEZ','VEJEZ','MATERNA','DX_DI','DX_RCV','PLANIFICACION'];
   const cob2=d.cobertura||{};
   const keys2=[...COB_ORDEN2.filter(k=>k in cob2),...Object.keys(cob2).filter(k=>!COB_ORDEN2.includes(k))];
@@ -2938,7 +2956,10 @@ function renderPreeval(d){
         }
         // META, DISCORDANCIA, % CUMPLIMIENTO por actividad
         const metaObj=(S.metas?.[pid]?.[aid])||(_metas_ips?.[pid]?.[aid])||null;
-        const metaVal=metaObj?+(metaObj.meta||metaObj)||0:0;
+        const metaMes_p=metaObj?+(metaObj.meta||metaObj)||0:0;
+        const _nm_p=window._mesesRips||1;
+        const metaVal=metaMes_p>0?metaMes_p*_nm_p:0;
+        const metaLbl_p=metaMes_p>0&&_nm_p>1?`${metaMes_p}/mes×${_nm_p}=${metaVal}`:metaVal>0?metaVal.toLocaleString("es-CO"):'0';
         // meta=0 → sin obligación → discordancia=0, cumplimiento=100%
         const disc=metaVal>0?Math.max(0,metaVal-found):0;
         const pctC=metaVal>0?(found>=metaVal?1:found/metaVal):1;
@@ -2946,7 +2967,7 @@ function renderPreeval(d){
         const archLbl={'consultas':'Consulta','procedimientos':'Proced.','vacunacion':'Vacuna','urgencias':'Urgencia','hospitalizacion':'Hosp.','medicamentos':'Medic.','recien_nacidos':'R.N.','otros':'Otro'}[act.archivo]||act.archivo||'';
         html+=`<tr style="border-bottom:1px solid var(--gris1)">
           <td style="padding:4px 8px 4px 12px;font-size:10.5px"><span style="display:block">${act.descripcion}</span>${archLbl?`<span style="font-size:9px;color:#94A3B8;font-weight:500">${archLbl}</span>`:''}</td>
-          <td style="padding:4px 6px;text-align:center;font-size:10.5px;color:${metaVal>0?'#1d4ed8':'#6B7280'};font-weight:700">${metaVal>0?metaVal.toLocaleString("es-CO"):'0'}</td>
+          <td style="padding:4px 6px;text-align:center;font-size:10.5px;color:${metaVal>0?'#1d4ed8':'#6B7280'};font-weight:700">${metaLbl_p}</td>
           <td style="padding:4px 6px;text-align:center;font-weight:700;color:${color}">${found.toLocaleString("es-CO")}</td>
           <td style="padding:4px 6px;text-align:center;font-size:10.5px;font-weight:700;color:${disc===0?'#059669':'#DC2626'}">${disc===0?'0':'−'+disc.toLocaleString("es-CO")}</td>
           <td style="padding:4px 6px;text-align:center;font-size:10.5px">${pctStr}</td>
