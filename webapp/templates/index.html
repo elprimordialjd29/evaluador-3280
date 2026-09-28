@@ -471,14 +471,18 @@ html.dark .it-btn.active{color:var(--azul2)}
     <!-- Step 2 -->
     <div id="step2" class="step-pane" style="display:none">
       <div class="pr-card">
-        <div class="pr-card-header"><div class="pr-card-icon">🎯</div><div><div class="pr-card-title">Metas por Programa</div><div class="pr-card-sub">Nota técnica o ingreso manual</div></div></div>
+        <div class="pr-card-header"><div class="pr-card-icon">🎯</div><div><div class="pr-card-title">Metas por Programa</div><div class="pr-card-sub" id="step2-sub">Cargando metas del prestador...</div></div></div>
         <div class="pr-card-body">
+          <!-- Banner de estado de metas -->
+          <div id="step2-metas-banner" style="display:none"></div>
+          <!-- Resumen visual de metas cargadas -->
+          <div id="step2-metas-resumen" style="display:none;margin-bottom:14px"></div>
           <div class="inner-tabs">
-            <button class="it-btn active" onclick="switchInnerTab(event,'it-nt')">📊 Nota Técnica xlsx</button>
-            <button class="it-btn" onclick="switchInnerTab(event,'it-manual')">✏️ Ingreso Manual</button>
+            <button class="it-btn active" id="it-btn-nt" onclick="switchInnerTab(event,'it-nt')">📊 Reemplazar con xlsx</button>
+            <button class="it-btn" onclick="switchInnerTab(event,'it-manual')">✏️ Ver / Editar Manual</button>
           </div>
           <div id="it-nt" class="it-pane active">
-            <div class="alert alert-info">Sube la herramienta xlsx (hoja A3 COMPLETO) para extraer metas automáticamente.</div>
+            <div class="alert alert-info" style="font-size:11.5px">Sube la herramienta xlsx (hoja A3 COMPLETO) para reemplazar las metas actuales.</div>
             <label class="upload-big" id="nt-drop"
               ondragover="event.preventDefault();this.classList.add('drag')"
               ondragleave="this.classList.remove('drag')"
@@ -492,7 +496,7 @@ html.dark .it-btn.active{color:var(--azul2)}
           </div>
           <div id="it-manual" class="it-pane">
             <div class="meta-wrap"><table class="meta-table">
-              <thead><tr><th>Programa / Actividad</th><th>Meta</th><th>UPC</th><th>Vr Meta</th></tr></thead>
+              <thead><tr><th>Programa / Actividad</th><th>Meta/mes</th><th>UPC</th><th>Vr Meta</th></tr></thead>
               <tbody id="meta-tbody"><tr><td colspan="4" style="text-align:center;padding:14px;color:var(--gris3)">Cargando...</td></tr></tbody>
             </table></div>
           </div>
@@ -1863,26 +1867,62 @@ function goStep(n){
       else w.querySelector(".ws-num").textContent=i;
     }
   });
-  // Al entrar al paso 2, pre-cargar metas del prestador activo si S.metas está vacío
+  // Al entrar al paso 2, pre-cargar metas del prestador activo
   if(n===2){
-    const metasIPS=S.ips_activa?.metas;
-    const hayMetasIPS=metasIPS&&Object.keys(metasIPS).length>0&&
-      Object.values(metasIPS).some(prog=>Object.values(prog||{}).some(v=>(v?.meta??v??0)>0));
-    if(hayMetasIPS&&(!S.metas||!Object.keys(S.metas).length)){
-      S.metas=JSON.parse(JSON.stringify(metasIPS));
+    const metasIPS=S.ips_activa?.metas||{};
+    // Combinar metas inline del prestador + S.metas (xlsx puede haber sobreescrito)
+    if(!S.metas||!Object.keys(S.metas).length){
+      if(Object.keys(metasIPS).length) S.metas=JSON.parse(JSON.stringify(metasIPS));
     }
-    if(S.metas&&Object.keys(S.metas).length){
-      // Mostrar indicador de metas pre-cargadas en la pestaña NT
-      const ntStatus=document.getElementById("nt-status");
-      const nProg=Object.keys(S.metas).length;
-      if(ntStatus&&!document.getElementById("nt-drop").classList.contains("loaded")){
-        ntStatus.innerHTML=`<div class="alert alert-success">✅ Metas cargadas desde el prestador (${nProg} programas). Puedes subir un xlsx para reemplazarlas.</div>`;
-      }
-      // Sincronizar en tab manual también
-      sincronizarMetasManual(S.metas);
-    }
-    if(!S.config) renderMetasManual();
+    _renderStep2Banner();
+    renderMetasManual();
   }
+}
+function _contarMetasActivas(metas){
+  let n=0;
+  for(const p of Object.values(metas||{})){
+    for(const v of Object.values(p||{})){
+      const val=v?.meta??v??0;
+      if(+val>0) n++;
+    }
+  }
+  return n;
+}
+function _renderStep2Banner(){
+  const banner=document.getElementById("step2-metas-banner");
+  const resumen=document.getElementById("step2-metas-resumen");
+  const sub=document.getElementById("step2-sub");
+  if(!banner) return;
+  const metas=S.metas||{};
+  const nProg=Object.keys(metas).length;
+  const nActs=_contarMetasActivas(metas);
+  if(nActs>0){
+    // Metas cargadas — mostrar banner verde y resumen
+    banner.style.display="block";
+    banner.innerHTML=`<div class="alert alert-success" style="margin-bottom:10px">✅ <strong>Metas precargadas del prestador</strong> — ${nProg} programas · ${nActs} actividades con meta &gt; 0. Puedes evaluar directamente o usar el xlsx para reemplazarlas.</div>`;
+    if(sub) sub.textContent="Metas cargadas desde el prestador";
+    // Resumen tabla compacta por programa
+    let html='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
+    for(const[pid,acts] of Object.entries(metas)){
+      const prog=S.config?.programas?.find(p=>p.id===pid);
+      const tot=Object.values(acts||{}).reduce((s,v)=>s+(+(v?.meta??v??0)),0);
+      if(tot<=0) continue;
+      html+=`<div style="background:var(--verde3);border:1px solid var(--verde2);border-radius:8px;padding:6px 12px;font-size:11px">
+        <div style="font-weight:700;color:var(--verde)">${prog?.nombre||pid}</div>
+        <div style="color:var(--gris3);font-size:10px">Meta total: <strong style="color:var(--verde)">${tot.toLocaleString("es-CO")}</strong></div>
+      </div>`;
+    }
+    html+='</div>';
+    resumen.style.display="block";
+    resumen.innerHTML=html;
+  } else {
+    // Sin metas
+    banner.style.display="block";
+    banner.innerHTML=`<div class="alert alert-error" style="margin-bottom:10px">⚠️ <strong>Sin metas configuradas</strong> para este prestador. Sube la herramienta xlsx o ingresa las metas manualmente, o edita el prestador y configura las metas desde Mantenimiento.</div>`;
+    resumen.style.display="none";
+    if(sub) sub.textContent="Sin metas — configúralas antes de evaluar";
+  }
+  sincronizarMetasManual(S.metas);
 }
 
 async function subirRIPS(files,hint){

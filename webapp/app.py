@@ -102,18 +102,26 @@ def _load_ips():
         try:
             rows = sb.table("prestadores").select("*").order("creado_en").execute().data
             if rows is not None:
-                return [{
-                    "id": r["id"], "nombre": r["nombre"], "nit": r.get("nit",""),
-                    "num_contrato": r.get("num_contrato",""), "regimen": r.get("regimen",""),
-                    "departamento": r.get("departamento",""), "municipio": r.get("municipio",""),
-                    "rep_legal": r.get("rep_legal",""), "num_actas": r.get("num_actas", 0),
-                    "activo": r.get("activo", True), "creado_por": r.get("creado_por",""),
-                    "vigencia_inicio": r.get("vigencia_inicio",""),
-                    "vigencia_fin": r.get("vigencia_fin",""),
-                    "tipo_contrato": r.get("tipo_contrato","ASISTENCIAL"),
-                    "lma": r.get("lma", {}),
-                    "metas": _cargar_metas_supabase(r["id"]),
-                } for r in rows]
+                result = []
+                for r in rows:
+                    # Preferir metas guardadas en columna JSON de prestadores;
+                    # si están vacías, intentar desde la tabla metas separada
+                    metas_inline = r.get("metas") or {}
+                    if not metas_inline:
+                        metas_inline = _cargar_metas_supabase(r["id"])
+                    result.append({
+                        "id": r["id"], "nombre": r["nombre"], "nit": r.get("nit",""),
+                        "num_contrato": r.get("num_contrato",""), "regimen": r.get("regimen",""),
+                        "departamento": r.get("departamento",""), "municipio": r.get("municipio",""),
+                        "rep_legal": r.get("rep_legal",""), "num_actas": r.get("num_actas", 0),
+                        "activo": r.get("activo", True), "creado_por": r.get("creado_por",""),
+                        "vigencia_inicio": r.get("vigencia_inicio",""),
+                        "vigencia_fin": r.get("vigencia_fin",""),
+                        "tipo_contrato": r.get("tipo_contrato","ASISTENCIAL"),
+                        "lma": r.get("lma", {}),
+                        "metas": metas_inline,
+                    })
+                return result
         except Exception:
             pass
     if IPS_FILE.exists():
