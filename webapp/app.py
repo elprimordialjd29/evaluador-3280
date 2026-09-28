@@ -242,7 +242,8 @@ def _get_current_user():
     if not uid:
         return None
     users = _load_users()
-    u = next((u for u in users if u["id"] == uid), None)
+    uid_s = str(uid)
+    u = next((u for u in users if str(u["id"]) == uid_s), None)
     return SimpleUser(u) if u else None
 
 def login_required(f):
@@ -293,7 +294,7 @@ def login_page():
         users = _load_users()
         user = next((u for u in users if u["username"] == username and u.get("activo", True)), None)
         if user and user["password"] == _hash(password):
-            session["user_id"] = user["id"]
+            session["user_id"] = str(user["id"])
             session.permanent = True
             return redirect(url_for("index"))
         return render_template("login.html", error="Usuario o contraseña incorrectos")
