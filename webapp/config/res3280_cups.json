@@ -2858,6 +2858,36 @@
         "R030"
       ],
       "prefix": []
+    },
+    "PRIMERA_INFANCIA": {
+      "label": "Primera Infancia",
+      "exact": [],
+      "prefix": []
+    },
+    "INFANCIA": {
+      "label": "Infancia",
+      "exact": [],
+      "prefix": []
+    },
+    "ADOLESCENCIA": {
+      "label": "Adolescencia",
+      "exact": [],
+      "prefix": []
+    },
+    "JOVENES": {
+      "label": "Jóvenes",
+      "exact": [],
+      "prefix": []
+    },
+    "ADULTEZ": {
+      "label": "Adultez",
+      "exact": [],
+      "prefix": []
+    },
+    "VEJEZ": {
+      "label": "Vejez",
+      "exact": [],
+      "prefix": []
     }
   }
 }

@@ -814,11 +814,11 @@ html.dark .it-btn.active{color:var(--azul2)}
         <div style="padding:14px;display:flex;flex-wrap:wrap;gap:9px" id="progs-wrap"></div>
       </div>
 
-      <!-- ── RUTAS CRUZADAS (CIE-10) ── -->
+      <!-- ── DIAGNÓSTICOS CIE-10 POR RUTA ── -->
       <div class="pr-card" style="grid-column:1/-1">
         <div class="pr-card-header">
-          <div class="pr-card-icon">🔀</div>
-          <div><div class="pr-card-title">Rutas Cruzadas — Diagnósticos CIE-10</div><div class="pr-card-sub">Códigos que determinan si un paciente pertenece a otra ruta. "Exacto": código completo. "Prefijo": empieza con (ej. E10 incluye E100, E101…)</div></div>
+          <div class="pr-card-icon">🧬</div>
+          <div><div class="pr-card-title">Diagnósticos CIE-10 por Ruta</div><div class="pr-card-sub">Códigos que clasifican un paciente en cada ruta/grupo. <b>Exacto</b>: código completo. <b>Prefijo</b>: cualquier código que empiece con el valor (ej. E10 incluye E100, E101…). Los grupos de Cursos de Vida se clasifican por edad; aquí puede añadirles CIE-10 adicionales si aplica.</div></div>
           {% if current_user.rol == 'admin' %}
           <button class="btn btn-primary" style="margin-left:auto;font-size:11px;padding:5px 11px" onclick="guardarRutasDiag()">💾 Guardar</button>
           {% endif %}
@@ -827,9 +827,9 @@ html.dark .it-btn.active{color:var(--azul2)}
           <table class="users-table" id="rutas-diag-table">
             <thead style="position:sticky;top:0;z-index:1">
               <tr>
-                <th style="width:170px">Ruta</th>
+                <th style="width:200px">Grupo / Ruta</th>
                 <th>Códigos exactos <span style="font-weight:400;color:var(--gris3)">(separados por coma)</span></th>
-                <th style="width:220px">Prefijos <span style="font-weight:400;color:var(--gris3)">(separados por coma)</span></th>
+                <th style="width:230px">Prefijos <span style="font-weight:400;color:var(--gris3)">(separados por coma)</span></th>
               </tr>
             </thead>
             <tbody id="rutas-diag-tbody"><tr><td colspan="3" style="text-align:center;padding:14px;color:var(--gris3)">Cargando...</td></tr></tbody>
@@ -3405,15 +3405,32 @@ function renderMantConfig(cfg){
   const rdtb=document.getElementById("rutas-diag-tbody");
   if(rdtb){
     const rdMap=cfg.rutas_diag||{};
-    const rdOrden=['EMBARAZADA','PRECONCEPCIONAL','PLANIFICACION','DM','HIPERTENSION'];
-    rdtb.innerHTML=rdOrden.map(ruta=>{
-      const r=rdMap[ruta]||{label:ruta,exact:[],prefix:[]};
-      return `<tr data-ruta="${ruta}">
-        <td style="font-weight:700;font-size:12px">${r.label||ruta}</td>
-        <td><textarea class="form-control rd-exact" rows="2" style="font-size:11px;resize:vertical;width:100%">${(r.exact||[]).join(', ')}</textarea></td>
-        <td><textarea class="form-control rd-prefix" rows="2" style="font-size:11px;resize:vertical;width:100%">${(r.prefix||[]).join(', ')}</textarea></td>
-      </tr>`;
-    }).join("");
+    // Orden: primero rutas específicas, luego cursos de vida
+    const rdSecciones=[
+      {titulo:'Rutas específicas (por diagnóstico CIE-10)',color:'#6D28D9',bg:'#F5F3FF',rutas:['EMBARAZADA','PRECONCEPCIONAL','PLANIFICACION','DM','HIPERTENSION']},
+      {titulo:'Cursos de Vida (clasificación principal por edad)',color:'#1E40AF',bg:'#EFF6FF',rutas:['PRIMERA_INFANCIA','INFANCIA','ADOLESCENCIA','JOVENES','ADULTEZ','VEJEZ']}
+    ];
+    const RUTA_ICONO={'EMBARAZADA':'🤰','PRECONCEPCIONAL':'📋','PLANIFICACION':'📅','DM':'💊','HIPERTENSION':'💓',
+      'PRIMERA_INFANCIA':'👶','INFANCIA':'🧒','ADOLESCENCIA':'🧑','JOVENES':'🙋','ADULTEZ':'🧑‍💼','VEJEZ':'👴'};
+    const RUTA_NOMBRE={'EMBARAZADA':'Embarazada','PRECONCEPCIONAL':'Preconcepcional','PLANIFICACION':'Planificación Familiar',
+      'DM':'Diabetes Mellitus','HIPERTENSION':'Hipertensión',
+      'PRIMERA_INFANCIA':'Primera Infancia','INFANCIA':'Infancia','ADOLESCENCIA':'Adolescencia',
+      'JOVENES':'Jóvenes','ADULTEZ':'Adultez','VEJEZ':'Vejez'};
+    let html='';
+    for(const sec of rdSecciones){
+      html+=`<tr><td colspan="3" style="background:${sec.bg};color:${sec.color};font-weight:700;font-size:10.5px;padding:6px 12px;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid ${sec.color}22">${sec.titulo}</td></tr>`;
+      for(const ruta of sec.rutas){
+        const r=rdMap[ruta]||{exact:[],prefix:[]};
+        html+=`<tr data-ruta="${ruta}">
+          <td style="white-space:nowrap;font-weight:700;font-size:12px;padding:8px 12px">
+            <span style="font-size:16px;margin-right:6px">${RUTA_ICONO[ruta]||'•'}</span>${RUTA_NOMBRE[ruta]||ruta}
+          </td>
+          <td style="padding:6px 10px"><textarea class="form-control rd-exact" rows="2" style="font-size:11px;resize:vertical;width:100%;min-height:48px">${(r.exact||[]).join(', ')}</textarea></td>
+          <td style="padding:6px 10px"><textarea class="form-control rd-prefix" rows="2" style="font-size:11px;resize:vertical;width:100%;min-height:48px">${(r.prefix||[]).join(', ')}</textarea></td>
+        </tr>`;
+      }
+    }
+    rdtb.innerHTML=html;
   }
 
   // ── Programas (badges) ──────────────────────────────────────────────────
@@ -3655,7 +3672,7 @@ async function guardarCursosVida(){
 async function guardarRutasDiag(){
   const rows=document.querySelectorAll("#rutas-diag-tbody tr[data-ruta]");
   const rutas_diag={};
-  const RUTA_LABELS={'EMBARAZADA':'🤰 Embarazada','PRECONCEPCIONAL':'📋 Preconcepcional','PLANIFICACION':'📅 Planificación Familiar','DM':'💊 Diabetes Mellitus','HIPERTENSION':'💓 Hipertensión'};
+  const RUTA_LABELS={'EMBARAZADA':'Embarazada','PRECONCEPCIONAL':'Preconcepcional','PLANIFICACION':'Planificación Familiar','DM':'Diabetes Mellitus','HIPERTENSION':'Hipertensión','PRIMERA_INFANCIA':'Primera Infancia','INFANCIA':'Infancia','ADOLESCENCIA':'Adolescencia','JOVENES':'Jóvenes','ADULTEZ':'Adultez','VEJEZ':'Vejez'};
   rows.forEach(tr=>{
     const ruta=tr.dataset.ruta;
     const exactRaw=tr.querySelector('.rd-exact').value.trim();
