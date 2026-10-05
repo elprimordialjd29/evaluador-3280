@@ -797,10 +797,33 @@ html.dark .it-btn.active{color:var(--azul2)}
         <div class="form-group"><label class="form-label">Municipio</label><input id="af-municipio" class="form-control"></div>
         <div class="form-group"><label class="form-label">Lugar</label><input id="af-lugar" class="form-control" placeholder="VALLEDUPAR"></div>
       </div>
-      <!-- Contrato + Coordinador -->
+      <!-- Contrato + Representante Legal IPS -->
       <div style="display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:14px">
         <div class="form-group"><label class="form-label">Nº Contrato</label><input id="af-contrato" class="form-control"></div>
-        <div class="form-group"><label class="form-label">Coordinador(a) de Baja Complejidad</label><input id="af-coordinador" class="form-control" value="DIANA CASTILLA BARRAZA"></div>
+        <div class="form-group"><label class="form-label">Representante Legal IPS</label><input id="af-rep_ips" class="form-control" placeholder="Nombre del Gerente / Rep. Legal"></div>
+      </div>
+      <!-- Rep Legal EPSI + Coordinador -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:6px">
+            Representante Legal EPSI
+            <span id="af-rep_epsi_lbl" style="font-size:10px;color:#94a3b8"></span>
+          </label>
+          <div style="display:flex;gap:6px">
+            <input id="af-rep_epsi" class="form-control" style="flex:1" placeholder="JAVIER CLAVIJO FRANCO">
+            <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="_guardarGlobal('rep_epsi');document.getElementById('af-rep_epsi_lbl').textContent='guardado'" title="Guardar como valor global">📌</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="display:flex;align-items:center;gap:6px">
+            Coordinador(a) Baja Complejidad
+            <span id="af-coord_lbl" style="font-size:10px;color:#94a3b8"></span>
+          </label>
+          <div style="display:flex;gap:6px">
+            <input id="af-coordinador" class="form-control" style="flex:1" value="DIANA CASTILLA BARRAZA">
+            <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="_guardarGlobal('coordinador');document.getElementById('af-coord_lbl').textContent='guardado'" title="Guardar como valor global">📌</button>
+          </div>
+        </div>
       </div>
       <!-- Funcionarios -->
       <div class="form-group" style="margin-bottom:14px">
@@ -5018,7 +5041,9 @@ function abrirNuevaActa(){
   document.getElementById("af-municipio").value=ips?ips.municipio||"":"";
   document.getElementById("af-lugar").value="VALLEDUPAR";
   document.getElementById("af-contrato").value=ips?ips.num_contrato||"":"";
-  document.getElementById("af-coordinador").value="DIANA CASTILLA BARRAZA";
+  const _afRepIps=document.getElementById("af-rep_ips");if(_afRepIps) _afRepIps.value=ips?ips.rep_legal||"":"";
+  const _afRepEpsi=document.getElementById("af-rep_epsi");if(_afRepEpsi) _afRepEpsi.value=localStorage.getItem("dusakawi_rep_epsi")||"JAVIER CLAVIJO FRANCO";
+  document.getElementById("af-coordinador").value=localStorage.getItem("dusakawi_coordinador")||"DIANA CASTILLA BARRAZA";
   document.getElementById("af-funcionarios-list").innerHTML="";
   document.getElementById("af-puntos").value="Revisión y confrontación de resultados del seguimiento a las actividades de promoción y mantenimiento de la salud y atención primaria, reportadas según Anexos contractuales N°. 11 y 12 por la coordinación de baja complejidad.";
   document.getElementById("af-objetivo").value="Verificar la ejecución de la efectiva prestación de los servicios, cumplimiento de metas reflejadas en los RIPS cargados y facturas radicadas por parte de los prestadores de la red de atencion primaria bajo a modalidad de capita, segun los anexos 10,11 y 12.";
@@ -5047,7 +5072,10 @@ async function abrirActaDetalle(id){
   document.getElementById("af-municipio").value=a.municipio||"";
   document.getElementById("af-lugar").value=a.lugar||"VALLEDUPAR";
   document.getElementById("af-contrato").value=a.num_contrato||"";
-  document.getElementById("af-coordinador").value=a.coordinador||"";
+  const afRepIps=document.getElementById("af-rep_ips");if(afRepIps) afRepIps.value=a.rep_ips||"";
+  const afRepEpsi=document.getElementById("af-rep_epsi");
+  if(afRepEpsi) afRepEpsi.value=a.rep_epsi||(localStorage.getItem("dusakawi_rep_epsi")||"");
+  document.getElementById("af-coordinador").value=a.coordinador||(localStorage.getItem("dusakawi_coordinador")||"DIANA CASTILLA BARRAZA");
   document.getElementById("af-puntos").value=a.puntos_a_tratar||"";
   document.getElementById("af-objetivo").value=a.objetivo||"";
   document.getElementById("af-desarrollo").value=a.desarrollo_conclusiones||"";
@@ -5096,8 +5124,8 @@ function leerActaForm(){
     desarrollo_conclusiones:document.getElementById("af-desarrollo").value,
     parrafo_despues_grafico:document.getElementById("af-parrafo").value,
     observaciones:document.getElementById("af-obs").value,
-    rep_ips:document.getElementById("rep_ips")?.value||"",
-    rep_epsi:document.getElementById("rep_epsi")?.value||"",
+    rep_ips:document.getElementById("af-rep_ips")?.value||document.getElementById("rep_ips")?.value||"",
+    rep_epsi:document.getElementById("af-rep_epsi")?.value||document.getElementById("rep_epsi")?.value||"",
     ips_id:_acta_actual?.ips_id||S.ips_activa?.id||"",
   };
 }
