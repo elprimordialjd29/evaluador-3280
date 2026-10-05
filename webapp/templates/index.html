@@ -3916,9 +3916,15 @@ async function eliminarIPS(id){
 }
 
 function _dashAbrirLista(){
+  var q=(document.getElementById('dash-buscar-ips')||{}).value||'';
+  var all=_ips_list||[];
+  var filtrados=q.trim()?all.filter(function(ip){
+    var s=q.toLowerCase();
+    return (ip.nombre||'').toLowerCase().includes(s)||(ip.nit||'').toLowerCase().includes(s)||(ip.num_contrato||'').toLowerCase().includes(s);
+  }):all;
+  _dashRenderLista(filtrados);
   var lista=document.getElementById('dash-ips-lista');
   if(lista) lista.style.display='block';
-  _dashBuscarIPS(document.getElementById('dash-buscar-ips').value||'');
   // Cerrar al hacer clic fuera
   setTimeout(function(){
     document.addEventListener('click',function _cerrar(e){
@@ -3965,14 +3971,14 @@ function _dashRenderLista(items){
 }
 
 function _dashBuscarIPS(q){
-  q=q.trim().toLowerCase();
-  const all=_ips_list||[];
-  const filtrados=q?all.filter(ip=>
-    ip.nombre.toLowerCase().includes(q)||
-    (ip.nit||'').toLowerCase().includes(q)||
-    (ip.num_contrato||'').toLowerCase().includes(q)
-  ):all;
+  var s=(q||'').trim().toLowerCase();
+  var all=_ips_list||[];
+  var filtrados=s?all.filter(function(ip){
+    return (ip.nombre||'').toLowerCase().includes(s)||(ip.nit||'').toLowerCase().includes(s)||(ip.num_contrato||'').toLowerCase().includes(s)||(ip.regimen||'').toLowerCase().includes(s);
+  }):all;
   _dashRenderLista(filtrados);
+  var lista=document.getElementById('dash-ips-lista');
+  if(lista&&filtrados.length) lista.style.display='block';
 }
 
 function _dashSeleccionarIPS(id){
