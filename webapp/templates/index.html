@@ -2398,6 +2398,7 @@ async function preevaluar(){
         }
       }
       window._mesesRips=_mesesSet.size||1;
+      window._mesesRipsLista=Array.from(_mesesSet).sort();
     }catch(err){
       st.textContent="❌ Error JS: "+err.message;
       console.error("_preAgregar falló:",err);
@@ -2416,7 +2417,8 @@ async function preevaluar(){
   }catch(err){st.textContent="❌ Error red: "+err.message;goStep(3);return;}
   if(!d.ok){st.textContent="❌ Error API: "+d.error;goStep(3);return;}
   const _nm=window._mesesRips||1;
-  st.textContent=`✅ ${Object.keys(d.resultados).length} programas · ${d.total_usuarios} usuarios · ${_nm} mes${_nm!==1?'es':''} de RIPS`;
+  const _mlista=(window._mesesRipsLista||[]).map(m=>{const[y,mo]=m.split('-');const mns=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];return (mns[+mo-1]||mo)+' '+y;}).join(', ');
+  st.textContent=`✅ ${Object.keys(d.resultados).length} programas · ${d.total_usuarios} usuarios · ${_nm} mes${_nm!==1?'es':''} de RIPS${_mlista?' ('+_mlista+')':''}`;
   renderPreeval(d);
   goStep(3);
 }
@@ -2937,7 +2939,7 @@ function abrirModalAuditoria(){
       const disc2=metaVal2>0?Math.max(0,metaVal2-conc2):0;
       const pct2=metaVal2>0?(conc2>=metaVal2?1:conc2/metaVal2):1;
       const pctStr2=pct2>=1?`<span style="color:#059669;font-weight:700">100%</span>`:`<span style="color:${pct2>=0.9?'#D97706':'#DC2626'};font-weight:700">${(pct2*100).toFixed(1)}%</span>`;
-      const metaLbl2=metaMes2>0&&_nm2>1?`${metaMes2}/mes×${_nm2}=${metaVal2}`:metaVal2>0?metaVal2.toLocaleString('es-CO'):'0';
+      const metaLbl2=metaVal2>0?metaVal2.toLocaleString('es-CO'):'0';
       // Rutas cruzadas — se omiten para Demanda Inducida (es su propósito enrutar)
       const hayRutas=!esDI&&!!(act.ruta_audit&&Object.keys(act.ruta_audit).length);
       const hayRegistros=total>0;
@@ -3441,7 +3443,7 @@ function renderPreeval(d){
         const metaMes_p=metaObj?+(metaObj.meta||metaObj)||0:0;
         const _nm_p=window._mesesRips||1;
         const metaVal=metaMes_p>0?metaMes_p*_nm_p:0;
-        const metaLbl_p=metaMes_p>0&&_nm_p>1?`${metaMes_p}/mes×${_nm_p}=${metaVal}`:metaVal>0?metaVal.toLocaleString("es-CO"):'0';
+        const metaLbl_p=metaVal>0?metaVal.toLocaleString("es-CO"):'0';
         // meta=0 → sin obligación → discordancia=0, cumplimiento=100%
         const disc=metaVal>0?Math.max(0,metaVal-found):0;
         const pctC=metaVal>0?(found>=metaVal?1:found/metaVal):1;
