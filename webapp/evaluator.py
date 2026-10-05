@@ -293,10 +293,10 @@ class RIPSEvaluator:
                     "upc":         upc_act,
                     "valor_descuento": valor_descuento,
                     "valor_reconocido": valor_reconoc,
-                    "pct_cumplimiento": (conciliado / meta_qty) if meta_qty > 0 else 1.0
+                    "pct_cumplimiento": (conciliado / meta_qty) if meta_qty > 0 else 0.0
                 })
 
-            pct_prog = (total_reconocido / total_exigido) if total_exigido > 0 else 1.0
+            pct_prog = (total_reconocido / total_exigido) if total_exigido > 0 else 0.0
             resultados[prog_id] = {
                 "nombre": prog["nombre"],
                 "nombre_acta": prog["nombre_acta"],
