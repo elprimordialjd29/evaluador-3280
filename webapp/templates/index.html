@@ -4602,9 +4602,10 @@ function mostrarResumenMetasIPS(metas,lma){
     const lmaV=lma[p.id]||0;
     const upc=total>0?lmaV/total:0;
     if(!total&&!lmaV) return "";
-    return `<span style="margin-right:12px;white-space:nowrap"><strong>${p.id.replace("_"," ")}:</strong> ${total} atenc. · UPC $${fmt(upc)}</span>`;
+    const nombre=p.id.replace(/_/g," ");
+    return `<div style="min-width:140px;flex:1 1 140px"><strong>${nombre}:</strong> ${total.toLocaleString("es-CO")} atenc. · UPC ${fmt(upc)}</div>`;
   }).filter(Boolean).join("");
-  document.getElementById("m-metas-resumen").innerHTML="✅ Metas: "+html;
+  document.getElementById("m-metas-resumen").innerHTML=`<div style="font-weight:700;margin-bottom:4px">✅ Metas:</div><div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:11px">${html}</div>`;
   document.getElementById("m-metas-resumen").style.display="block";
 }
 
