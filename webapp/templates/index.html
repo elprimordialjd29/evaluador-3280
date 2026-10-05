@@ -353,19 +353,30 @@ html.dark .it-btn.active{color:var(--azul2)}
         <div><div class="pr-card-title">Carga de Datos RIPS</div><div class="pr-card-sub">Arrastra o selecciona archivos TXT (Res. 3374) o JSON</div></div>
       </div>
       <div class="pr-card-body">
-        <!-- Buscador de prestador -->
-        <div style="margin-bottom:14px">
-          <div style="font-size:11px;font-weight:600;color:var(--gris3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em">Prestador a evaluar</div>
-          <div style="position:relative">
-            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px">🔍</span>
-            <input id="dash-buscar-ips" class="form-control" placeholder="Buscar por nombre, NIT o Nº contrato..."
-              oninput="_dashBuscarIPS(this.value)" autocomplete="off"
-              style="padding-left:32px;font-size:12px">
+        <!-- Selector de prestador -->
+        <div style="margin-bottom:16px;border:1.5px solid var(--azul2);border-radius:12px;overflow:hidden;background:var(--azul4)">
+          <!-- Header -->
+          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(135deg,#1E3A8A,#2563EB)">
+            <div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🏥</div>
+            <div style="flex:1">
+              <div style="font-size:12px;font-weight:700;color:#fff">Prestador a Evaluar</div>
+              <div style="font-size:10px;color:rgba(255,255,255,.7)" id="dash-ips-header-sub">Selecciona el prestador de la lista o busca por nombre / NIT</div>
+            </div>
+            <div id="dash-ips-sel-chip" style="display:none;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:20px;font-size:10.5px;color:#fff;font-weight:600;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis"></div>
+            <button id="dash-ips-limpiar-btn" onclick="_dashLimpiarIPS()" style="display:none;background:rgba(255,255,255,.15);border:none;cursor:pointer;color:#fff;padding:4px 9px;border-radius:6px;font-size:11px">✕ Cambiar</button>
           </div>
-          <div id="dash-ips-resultados" style="display:none;border:1px solid var(--gris1);border-radius:8px;overflow:hidden;max-height:180px;overflow-y:auto;background:var(--card-bg);margin-top:4px;box-shadow:var(--shadow-sm)"></div>
-          <div id="dash-ips-seleccionada" style="display:none;margin-top:6px;padding:7px 12px;background:var(--verde3);border:1px solid var(--verde2);border-radius:8px;font-size:11.5px;color:var(--verde);display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <span id="dash-ips-sel-txt"></span>
-            <button onclick="_dashLimpiarIPS()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gris3);padding:0">✕</button>
+          <!-- Buscador -->
+          <div style="padding:10px 12px 8px;border-bottom:1px solid var(--gris1);background:var(--card-bg)" id="dash-ips-search-wrap">
+            <div style="position:relative">
+              <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--gris3);font-size:13px;pointer-events:none">🔍</span>
+              <input id="dash-buscar-ips" class="form-control" placeholder="Buscar por nombre, NIT o Nº contrato..."
+                oninput="_dashBuscarIPS(this.value)" autocomplete="off"
+                style="padding-left:30px;font-size:11.5px;border-color:var(--gris1)">
+            </div>
+          </div>
+          <!-- Lista de prestadores -->
+          <div id="dash-ips-lista" style="max-height:190px;overflow-y:auto;background:var(--card-bg)">
+            <div style="padding:20px;text-align:center;color:var(--gris3);font-size:11.5px">Cargando prestadores...</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
@@ -1328,6 +1339,7 @@ async function cargarIPS(){
   renderIPS(_ips_list,"ips-list2");
   document.getElementById("ds-total-ips").textContent=_ips_list.length;
   const pct=document.getElementById("pl-count-txt");if(pct)pct.textContent=_ips_list.length+' IPS';
+  _dashRenderLista(_ips_list);
 }
 
 function renderIPS(lista,cid){
@@ -3901,28 +3913,47 @@ async function eliminarIPS(id){
   }
 }
 
+function _dashRenderLista(items){
+  const lista=document.getElementById('dash-ips-lista');
+  if(!lista) return;
+  if(!items||!items.length){
+    lista.innerHTML='<div style="padding:16px;text-align:center;color:var(--gris3);font-size:11.5px">Sin prestadores registrados</div>';
+    return;
+  }
+  const regimenColor={SUBSIDIADO:'#2563EB',CONTRIBUTIVO:'#7c3aed',ESPECIAL:'#0f766e'};
+  lista.innerHTML=items.map(ip=>{
+    const nMetas=_contarMetasActivas(ip.metas||{});
+    const activo=S.ips_activa&&S.ips_activa.id===ip.id;
+    const rc=regimenColor[ip.regimen]||'#64748b';
+    return `<div onclick="_dashSeleccionarIPS('${ip.id}')"
+      style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .12s;background:${activo?'var(--azul4)':''};"
+      onmouseover="if(!this.dataset.activo)this.style.background='var(--gris0)'" onmouseout="if(!this.dataset.activo)this.style.background=''" data-activo="${activo?'1':''}">
+      <div style="width:34px;height:34px;border-radius:8px;background:${activo?'#dbeafe':'var(--azul4)'};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${activo?'✅':'🏥'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ip.nombre}</div>
+        <div style="font-size:10px;color:var(--gris3);margin-top:1px">NIT: ${ip.nit||'—'} · ${ip.municipio||''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${rc}20;color:${rc};margin-bottom:3px">${ip.regimen||'—'}</div>
+        <div style="font-size:9.5px;color:var(--gris3)">Cto: <strong>${ip.num_contrato||'—'}</strong></div>
+      </div>
+      <div style="text-align:center;flex-shrink:0;width:38px">
+        <div style="font-size:14px;font-weight:900;color:${nMetas>0?'#16a34a':'var(--gris3)'}">${nMetas}</div>
+        <div style="font-size:8.5px;color:var(--gris3);line-height:1.1">act.<br>meta</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function _dashBuscarIPS(q){
-  const res=document.getElementById('dash-ips-resultados');
   q=q.trim().toLowerCase();
-  if(!q){res.style.display='none';return;}
-  const matches=(_ips_list||[]).filter(ip=>
+  const all=_ips_list||[];
+  const filtrados=q?all.filter(ip=>
     ip.nombre.toLowerCase().includes(q)||
     (ip.nit||'').toLowerCase().includes(q)||
     (ip.num_contrato||'').toLowerCase().includes(q)
-  ).slice(0,8);
-  if(!matches.length){
-    res.style.display='block';
-    res.innerHTML='<div style="padding:10px 14px;font-size:12px;color:var(--gris3)">Sin resultados</div>';
-    return;
-  }
-  res.style.display='block';
-  res.innerHTML=matches.map(ip=>`
-    <div onclick="_dashSeleccionarIPS('${ip.id}')"
-      style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .1s"
-      onmouseover="this.style.background='var(--gris0)'" onmouseout="this.style.background=''">
-      <div style="font-size:12px;font-weight:700">${ip.nombre}</div>
-      <div style="font-size:10.5px;color:var(--gris3)">NIT: ${ip.nit||'—'} · Contrato: ${ip.num_contrato||'—'} · ${ip.municipio||''}</div>
-    </div>`).join('');
+  ):all;
+  _dashRenderLista(filtrados);
 }
 
 function _dashSeleccionarIPS(id){
@@ -3932,23 +3963,29 @@ function _dashSeleccionarIPS(id){
   if(ip.metas&&Object.keys(ip.metas).length){
     S.metas=JSON.parse(JSON.stringify(ip.metas));
   }
-  document.getElementById('dash-ips-resultados').style.display='none';
-  document.getElementById('dash-buscar-ips').value='';
-  const sel=document.getElementById('dash-ips-seleccionada');
-  const txt=document.getElementById('dash-ips-sel-txt');
+  // Actualizar UI header
+  const chip=document.getElementById('dash-ips-sel-chip');
+  const limpiarBtn=document.getElementById('dash-ips-limpiar-btn');
+  const sub=document.getElementById('dash-ips-header-sub');
   const nMetas=_contarMetasActivas(ip.metas||{});
-  txt.innerHTML=`✅ <strong>${ip.nombre}</strong> · NIT ${ip.nit||'—'} · ${nMetas} actividades con meta`;
-  sel.style.display='flex';
-  // Habilitar botones de evaluación si ya hay RIPS
-  _dashActualizarBotonesEval();
+  if(chip){chip.textContent=ip.nombre;chip.style.display='block';}
+  if(limpiarBtn) limpiarBtn.style.display='block';
+  if(sub) sub.textContent=`${ip.num_contrato||''} · ${ip.regimen||''} · ${nMetas} actividades con meta`;
+  // Re-render lista para marcar activo
+  _dashBuscarIPS(document.getElementById('dash-buscar-ips').value||'');
 }
 
 function _dashLimpiarIPS(){
   S.ips_activa=null;
   S.metas={};
-  document.getElementById('dash-ips-seleccionada').style.display='none';
   document.getElementById('dash-buscar-ips').value='';
-  _dashActualizarBotonesEval();
+  const chip=document.getElementById('dash-ips-sel-chip');
+  const limpiarBtn=document.getElementById('dash-ips-limpiar-btn');
+  const sub=document.getElementById('dash-ips-header-sub');
+  if(chip) chip.style.display='none';
+  if(limpiarBtn) limpiarBtn.style.display='none';
+  if(sub) sub.textContent='Selecciona el prestador de la lista o busca por nombre / NIT';
+  _dashRenderLista(_ips_list||[]);
 }
 
 function _dashActualizarBotonesEval(){}
