@@ -302,11 +302,9 @@ html.dark .it-btn.active{color:var(--azul2)}
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-hdr btn-hdr-restaurar" onclick="restaurarBackup()" title="Exportar backup JSON">🗄️ Restaurar</button>
     <span id="db-status-badge" class="server-badge-pill loading" title="Estado de la base de datos">
       <span class="dot"></span><span id="db-status-text">Servidor · BD...</span>
     </span>
-    <button class="btn-hdr btn-hdr-sync" onclick="sincronizarDatos()" title="Sincronizar datos del servidor">⇄ Sincronizar</button>
     <div class="user-chip">
       <div class="uc-avatar">{{ current_user.nombre[0]|upper }}</div>
       <span class="uc-name">{{ current_user.nombre }}</span>
@@ -5252,10 +5250,24 @@ function renderActaPreview(){
   const hdr=(pag)=>`
     <table style="width:100%;border-collapse:collapse;border:${BRD};margin-bottom:0;font-family:Arial,sans-serif">
       <tr>
-        <td style="width:120px;padding:6px 8px;border-right:${BRD};text-align:center;vertical-align:middle">
-          <div style="font-size:15pt;font-weight:900;color:${AZUL};letter-spacing:1px;line-height:1.05">DUSAKAWI</div>
-          <div style="font-size:9pt;font-weight:900;color:${AZUL};letter-spacing:2px">EPSI</div>
-          <div style="font-size:5pt;color:#555;margin-top:2px;line-height:1.3">ASOCIACIÓN DE CABILDOS INDIGENAS<br>DEL CESAR Y LA GUAJIRA</div>
+        <td style="width:130px;padding:6px 8px;border-right:${BRD};text-align:center;vertical-align:middle">
+          <svg width="110" height="80" viewBox="0 0 110 80" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0 auto 2px">
+            <!-- Sol/círculo central -->
+            <circle cx="55" cy="30" r="18" fill="none" stroke="${AZUL}" stroke-width="2.2"/>
+            <circle cx="55" cy="30" r="10" fill="${AZUL}" opacity=".15"/>
+            <!-- Rayos del sol -->
+            ${[0,30,60,90,120,150,180,210,240,270,300,330].map(a=>{const r=a*Math.PI/180;const x1=55+20*Math.sin(r);const y1=30-20*Math.cos(r);const x2=55+25*Math.sin(r);const y2=30-25*Math.cos(r);return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${AZUL}" stroke-width="1.8"/>`;}).join('')}
+            <!-- Figura humana estilizada -->
+            <circle cx="55" cy="26" r="3.5" fill="${AZUL}"/>
+            <line x1="55" y1="29.5" x2="55" y2="38" stroke="${AZUL}" stroke-width="2"/>
+            <line x1="49" y1="33" x2="61" y2="33" stroke="${AZUL}" stroke-width="1.8"/>
+            <line x1="55" y1="38" x2="51" y2="44" stroke="${AZUL}" stroke-width="1.8"/>
+            <line x1="55" y1="38" x2="59" y2="44" stroke="${AZUL}" stroke-width="1.8"/>
+            <!-- Texto -->
+            <text x="55" y="60" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="900" fill="${AZUL}" letter-spacing="1.5">DUSAKAWI</text>
+            <text x="55" y="70" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" font-weight="700" fill="${AZUL}" letter-spacing="3">EPSI</text>
+            <text x="55" y="78" text-anchor="middle" font-family="Arial,sans-serif" font-size="4.5" fill="#555">ASOCIACIÓN DE CABILDOS INDÍGENAS</text>
+          </svg>
         </td>
         <td style="padding:8px 16px;border-right:${BRD};text-align:center;vertical-align:middle">
           <div style="font-size:7.5pt;color:#444;letter-spacing:.3px">PROCESO: GESTIÓN DEL RIESGO EN SALUD</div>
