@@ -53,6 +53,22 @@ def _get_db():
         import traceback; traceback.print_exc()
         return None
 
+def _migrate_db(conn):
+    """Agrega columnas faltantes sin perder datos existentes."""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(prestadores)").fetchall()}
+    for col, defn in [
+        ("departamento",    "TEXT DEFAULT ''"),
+        ("rep_legal",       "TEXT DEFAULT ''"),
+        ("vigencia_inicio", "TEXT DEFAULT ''"),
+        ("vigencia_fin",    "TEXT DEFAULT ''"),
+        ("tipo_contrato",   "TEXT DEFAULT 'ASISTENCIAL'"),
+        ("lma",             "TEXT DEFAULT '{}'"),
+        ("metas",           "TEXT DEFAULT '{}'"),
+        ("creado_por",      "TEXT DEFAULT ''"),
+    ]:
+        if col not in cols:
+            conn.execute(f"ALTER TABLE prestadores ADD COLUMN {col} {defn}")
+
 def _init_db(conn):
     conn.execute("""CREATE TABLE IF NOT EXISTS usuarios (
         id TEXT PRIMARY KEY,
@@ -95,7 +111,7 @@ def _init_db(conn):
         creado_por TEXT,
         created_at TEXT DEFAULT (datetime('now'))
     )""")
-    conn.commit()
+    _migrate_db(conn)
 
 # ── Persistencia JSON (fallback cuando no hay SQLite) ───────────────────────
 USERS_FILE  = DATA_PATH / "users.json"
