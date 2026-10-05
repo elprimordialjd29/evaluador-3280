@@ -1557,10 +1557,12 @@ document.addEventListener("DOMContentLoaded",async()=>{
 function hoy(){return new Date().toISOString().slice(0,10);}
 
 async function cargarConfig(){
-  const r=await fetch("/api/config");
-  S.config=await r.json();
-  _syncDxGruposFromConfig(S.config);
-  renderMetasManual();
+  try{
+    const r=await fetch("/api/config");
+    S.config=await r.json();
+    _syncDxGruposFromConfig(S.config);
+    renderMetasManual();
+  }catch(e){console.error("cargarConfig error:",e);}
 }
 
 function switchTab(e,id){
@@ -1580,18 +1582,24 @@ function switchInnerTab(e,id){
 }
 
 async function cargarIPS(){
-  const r=await fetch("/api/ips");
-  const d=await r.json();
-  _ips_list=d.ips||[];
+  try{
+    const r=await fetch("/api/ips");
+    const d=await r.json();
+    _ips_list=d.ips||[];
+  }catch(e){
+    console.error("cargarIPS error:",e);
+    _ips_list=[];
+  }
   renderIPS(_ips_list,"ips-list");
   renderIPS(_ips_list,"ips-list2");
-  document.getElementById("ds-total-ips").textContent=_ips_list.length;
+  const tot=document.getElementById("ds-total-ips");if(tot)tot.textContent=_ips_list.length;
   const pct=document.getElementById("pl-count-txt");if(pct)pct.textContent=_ips_list.length+' IPS';
   _dashRenderLista(_ips_list);
 }
 
 function renderIPS(lista,cid){
   const el=document.getElementById(cid);
+  if(!el) return;
   if(!lista.length){el.innerHTML='<div class="empty-state">Sin prestadores registrados</div>';return;}
   el.innerHTML=lista.map(ip=>`
     <div class="ips-item" onclick="seleccionarIPS('${ip.id}','${cid}',event)">
