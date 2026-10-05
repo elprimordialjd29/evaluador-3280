@@ -261,6 +261,11 @@ class RIPSEvaluator:
                     continue
 
                 meta_qty   = int(prog_metas.get(act_id, {}).get("meta", 0) if isinstance(prog_metas.get(act_id), dict) else prog_metas.get(act_id, 0))
+
+                # Actividades sin meta asignada no se evalúan
+                if meta_qty <= 0:
+                    continue
+
                 upc_act    = float(prog_metas.get(act_id, {}).get("upc", upc_prog) if isinstance(prog_metas.get(act_id), dict) else upc_prog)
                 valor_meta = meta_qty * upc_act
 
