@@ -496,22 +496,64 @@ html.dark .it-btn.active{color:var(--azul2)}
         <div class="pr-card-header"><div class="pr-card-icon">📋</div><div><div class="pr-card-title">Datos del Acta</div><div class="pr-card-sub">Información del prestador y periodo evaluado</div></div></div>
         <div class="pr-card-body">
           <div class="form-grid-2">
-            <div class="form-group"><label class="form-label">Nº Acta</label><input id="acta_num" class="form-control" placeholder="PMS-44430-2026-16-1"></div>
+            <!-- Nº Acta auto -->
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Nº Acta</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input id="acta_num" class="form-control" placeholder="ASE-20570-2026-67-2" style="flex:1">
+                <select id="acta_trimestre" class="form-control" style="width:130px" onchange="_autoActaNum()">
+                  <option value="">Trimestre…</option>
+                  <option value="1">1° Trimestre</option>
+                  <option value="2">2° Trimestre</option>
+                  <option value="3">3° Trimestre</option>
+                  <option value="4">4° Trimestre</option>
+                </select>
+                <button class="btn btn-outline" style="white-space:nowrap;padding:7px 12px" onclick="_autoActaNum()" title="Generar Nº Acta">⟳ Generar</button>
+              </div>
+            </div>
             <div class="form-group"><label class="form-label">Fecha Evaluación</label><input id="fecha_eval" class="form-control" type="date"></div>
-            <div class="form-group"><label class="form-label">Periodo</label><input id="periodo" class="form-control" placeholder="MAR"></div>
+            <div class="form-group"><label class="form-label">Período Evaluado</label><input id="periodo" class="form-control" placeholder="Abril 2026, Mayo 2026, Junio 2026"></div>
             <div class="form-group"><label class="form-label">Vigencia Contrato</label><input id="vigencia" class="form-control" placeholder="01/03/2026 - 31/12/2026"></div>
-            <div class="form-group"><label class="form-label">Periodo Fin</label><input id="periodo_fin" class="form-control" type="date"></div>
             <div class="form-group"><label class="form-label">Empresa / IPS</label><input id="empresa" class="form-control" placeholder="IPSI KARAQUITA"></div>
             <div class="form-group"><label class="form-label">NIT</label><input id="nit" class="form-control"></div>
             <div class="form-group"><label class="form-label">Régimen</label><select id="regimen" class="form-control"><option>SUBSIDIADO</option><option>CONTRIBUTIVO</option><option>ESPECIAL</option></select></div>
             <div class="form-group"><label class="form-label">Municipio</label><input id="municipio" class="form-control"></div>
-            <div class="form-group"><label class="form-label">Nº Contrato</label><input id="num_contrato" class="form-control"></div>
+            <div class="form-group"><label class="form-label">Lugar</label><input id="lugar" class="form-control" value="VALLEDUPAR"></div>
+            <div class="form-group"><label class="form-label">Nº Contrato</label><input id="num_contrato" class="form-control" oninput="_autoActaNum()"></div>
             <div class="form-group"><label class="form-label">Rep. Legal IPS</label><input id="rep_ips" class="form-control"></div>
-            <div class="form-group"><label class="form-label">Rep. Legal EPSI</label><input id="rep_epsi" class="form-control" value="JAVIER CLAVIJO FRANCO"></div>
-            <div class="form-group"><label class="form-label">Coordinador(a)</label><input id="coordinador" class="form-control" value="DIANA CASTILLA BARRAZA"></div>
-            <div class="form-group"><label class="form-label">Evaluador(a)</label><input id="evaluador" class="form-control" value="{{ current_user.nombre }}"></div>
+            <!-- Rep EPSI global -->
+            <div class="form-group">
+              <label class="form-label" style="display:flex;align-items:center;gap:6px">
+                Rep. Legal EPSI
+                <span id="rep_epsi_global_lbl" style="font-size:10px;color:#94a3b8"></span>
+              </label>
+              <div style="display:flex;gap:6px">
+                <input id="rep_epsi" class="form-control" style="flex:1">
+                <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="_guardarGlobal('rep_epsi')" title="Guardar como valor global">📌</button>
+              </div>
+            </div>
+            <!-- Coordinador global -->
+            <div class="form-group">
+              <label class="form-label" style="display:flex;align-items:center;gap:6px">
+                Coordinador(a) Baja Complejidad
+                <span id="coordinador_global_lbl" style="font-size:10px;color:#94a3b8"></span>
+              </label>
+              <div style="display:flex;gap:6px">
+                <input id="coordinador" class="form-control" style="flex:1">
+                <button class="btn btn-outline" style="padding:6px 10px;font-size:12px" onclick="_guardarGlobal('coordinador')" title="Guardar como valor global">📌</button>
+              </div>
+            </div>
+            <!-- Evaluadores -->
+            <div class="form-group" style="grid-column:1/-1">
+              <label class="form-label">Funcionario(s) que realiza(n) la evaluación</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select id="evaluador_select" class="form-control" style="flex:1"></select>
+                <button class="btn btn-outline" style="padding:7px 12px;white-space:nowrap" onclick="_agregarEvaluador()">+ Agregar</button>
+              </div>
+              <div id="evaluadores_chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px"></div>
+              <input id="evaluador" type="hidden" value="{{ current_user.nombre }}">
+            </div>
           </div>
-          <div class="form-group" style="margin-top:10px"><label class="form-label">Observaciones</label><textarea id="observaciones" class="form-control" rows="2"></textarea></div>
           <div class="btn-row"><button class="btn btn-primary" onclick="goStep(2)">Siguiente → Metas</button></div>
         </div>
       </div>
@@ -615,42 +657,81 @@ html.dark .it-btn.active{color:var(--azul2)}
     <!-- Step 5 — Acta Excel -->
     <div id="step5" class="step-pane" style="display:none">
       <div class="pr-card">
-        <div class="pr-card-header"><div class="pr-card-icon">📄</div><div><div class="pr-card-title">Generar Acta de Evaluación</div><div class="pr-card-sub">Vista previa y descarga en formato Excel</div></div></div>
-        <div class="pr-card-body">
+        <div class="pr-card-header" style="flex-wrap:wrap;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;flex:1">
+            <div class="pr-card-icon">📄</div>
+            <div><div class="pr-card-title" id="step5-acta-titulo">Acta de Evaluación</div><div class="pr-card-sub">Formulario y vista previa</div></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-success" id="btn-descargar" onclick="descargarActa()">⬇ Excel</button>
+            <button class="btn btn-outline" onclick="goStep(4)">← Resultados</button>
+          </div>
+        </div>
+        <!-- Tabs -->
+        <div style="display:flex;border-bottom:1px solid var(--gris1);padding:0 16px">
+          <button id="tab5-form-btn" onclick="_tab5('form')" style="padding:10px 18px;font-size:12.5px;font-weight:700;border:none;background:none;color:var(--azul);border-bottom:2.5px solid var(--azul);cursor:pointer">Formulario</button>
+          <button id="tab5-prev-btn" onclick="_tab5('prev')" style="padding:10px 18px;font-size:12.5px;font-weight:600;border:none;background:none;color:var(--gris3);border-bottom:2.5px solid transparent;cursor:pointer">Vista Previa</button>
+        </div>
+        <!-- Formulario tab -->
+        <div id="tab5-form" class="pr-card-body">
           <div id="acta-mini-resumen"></div>
-          <!-- Vista previa documento -->
-          <div id="acta-preview" style="margin-bottom:16px;border:1.5px solid var(--gris1);border-radius:10px;overflow:hidden;background:#fff">
-            <!-- Encabezado acta -->
-            <div style="background:#1a3a6b;color:#fff;padding:14px 20px;text-align:center">
-              <div style="font-size:11px;letter-spacing:1px;opacity:.8;margin-bottom:2px">DUSAKAWI EPSI — RESOLUCIÓN 3280/2018</div>
-              <div style="font-size:16px;font-weight:800;letter-spacing:.5px">ACTA DE EVALUACIÓN DE CUMPLIMIENTO</div>
-              <div style="font-size:11px;opacity:.8;margin-top:2px">PROGRAMA DE PROMOCIÓN Y MANTENIMIENTO DE LA SALUD</div>
-            </div>
-            <!-- Info prestador -->
-            <div id="apv-info" style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid var(--gris1)"></div>
+          <div style="font-size:11px;font-weight:700;color:var(--azul);margin:10px 0 8px;text-transform:uppercase;letter-spacing:.5px">Textos del Acta</div>
+          <div class="form-group"><label class="form-label">Puntos a Tratar</label>
+            <textarea id="puntos_tratar" class="form-control" rows="3">Revisión y confrontación de resultados del seguimiento a las actividades de recuperación de la salud y atención primaria, reportadas según Anexo No. 12 por la Coordinación de Baja Complejidad</textarea></div>
+          <div class="form-group"><label class="form-label">Objetivo</label>
+            <textarea id="objetivo" class="form-control" rows="3">Verificar la ejecución de la efectiva prestación de los servicios, cumplimiento de metas reflejadas en los RIPS cargados y facturas radicadas por parte de los prestadores de la red de atención primaria bajo la modalidad de cápita, según los anexos 11, 13, 14 y 17.</textarea></div>
+          <div class="form-group"><label class="form-label">Desarrollo y Conclusiones (antes del gráfico)</label>
+            <textarea id="desarrollo" class="form-control" rows="3">Se realiza la evaluación de la ejecución de las actividades contenidas en las rutas de atención en salud correspondientes al período evaluado. En donde se evidencia lo relacionado en la gráfica 1.</textarea></div>
+          <div class="form-group"><label class="form-label">Párrafo después del gráfico</label>
+            <textarea id="parrafo_post" class="form-control" rows="3">Se verifica la ejecución de las actividades de atención primaria, correspondientes a la vigencia antes mencionada, se aclara que se debe cumplir con mínimo el 100% de las actividades programadas para los servicios Asistenciales, a continuación, se relaciona en la tabla 2. el resultado obtenido:</textarea></div>
+          <div class="form-group"><label class="form-label">Observaciones</label>
+            <textarea id="observaciones" class="form-control" rows="3" placeholder="Los servicios Asistenciales son objeto de seguimiento en términos de calidad..."></textarea></div>
+        </div>
+        <!-- Vista Previa tab -->
+        <div id="tab5-prev" style="display:none;padding:16px">
+          <div id="acta-preview" style="border:1.5px solid var(--gris1);border-radius:10px;overflow:hidden;background:#fff;max-width:900px;margin:0 auto">
+            <!-- Encabezado institucional -->
+            <table style="width:100%;border-collapse:collapse;border-bottom:2px solid #1a3a6b">
+              <tr>
+                <td style="padding:10px 14px;width:120px;vertical-align:middle">
+                  <div style="font-size:11px;font-weight:900;color:#1a3a6b;line-height:1.2">DUSAKAWI<br>EPSI</div>
+                </td>
+                <td style="padding:10px;text-align:center;vertical-align:middle;border-left:1px solid #ddd;border-right:1px solid #ddd">
+                  <div style="font-size:10px;color:#666;margin-bottom:3px">PROCESO: GESTIÓN DEL RIESGO EN SALUD</div>
+                  <div style="font-size:15px;font-weight:900;color:#1a3a6b">ACTA DE EVALUACIÓN DE SERVICIOS</div>
+                </td>
+                <td style="padding:10px 14px;width:160px;font-size:10px;color:#333;line-height:1.6;vertical-align:top">
+                  <div><strong>CÓDIGO:</strong> DGR-BAJ-FT-11</div>
+                  <div><strong>VERSIÓN:</strong> 02</div>
+                  <div><strong>EMISIÓN:</strong> 15/06/2022</div>
+                  <div><strong>VIGENCIA:</strong> 02/03/2028</div>
+                  <div><strong>PÁGINA:</strong> 1 DE 2</div>
+                </td>
+              </tr>
+            </table>
+            <!-- Tabla info prestador -->
+            <div id="apv-info" style="font-size:11px"></div>
+            <!-- Textos -->
+            <div id="apv-textos" style="font-size:11px;padding:0 0 4px"></div>
             <!-- Tabla programas -->
             <div style="overflow-x:auto">
-              <table style="width:100%;border-collapse:collapse;font-size:11.5px">
+              <table style="width:100%;border-collapse:collapse;font-size:11px">
                 <thead>
                   <tr style="background:#1a3a6b;color:#fff">
-                    <th style="padding:8px 12px;text-align:left;font-weight:700">Programa / Ruta</th>
-                    <th style="padding:8px 10px;text-align:right;white-space:nowrap">Vr Exigido</th>
-                    <th style="padding:8px 10px;text-align:right;white-space:nowrap">Vr Reconocido</th>
-                    <th style="padding:8px 10px;text-align:right;white-space:nowrap">Descuento</th>
-                    <th style="padding:8px 10px;text-align:center;white-space:nowrap">% Cumpl.</th>
+                    <th style="padding:7px 10px;text-align:left">Programa / Ruta</th>
+                    <th style="padding:7px 8px;text-align:right;white-space:nowrap">Vr Exigido</th>
+                    <th style="padding:7px 8px;text-align:right;white-space:nowrap">Vr Reconocido</th>
+                    <th style="padding:7px 8px;text-align:right;white-space:nowrap">Descuento</th>
+                    <th style="padding:7px 8px;text-align:center;white-space:nowrap">% Cumpl.</th>
                   </tr>
                 </thead>
                 <tbody id="apv-tbody"></tbody>
               </table>
             </div>
             <!-- Observaciones -->
-            <div id="apv-obs" style="padding:12px 16px;border-top:1px solid var(--gris1);font-size:11px;color:var(--text-muted)"></div>
+            <div id="apv-obs" style="padding:10px 14px;border-top:1px solid #eee;font-size:11px"></div>
             <!-- Firmas -->
-            <div id="apv-firmas" style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--gris1)"></div>
-          </div>
-          <div class="btn-row">
-            <button class="btn btn-success" id="btn-descargar" onclick="descargarActa()">⬇ Descargar Acta Excel</button>
-            <button class="btn btn-outline" onclick="goStep(4)">← Resultados</button>
+            <div id="apv-firmas" style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #eee"></div>
           </div>
         </div>
       </div>
@@ -3770,24 +3851,39 @@ function renderActaPreview(data){
   const info=leerInfo();
   const tot=data.totales||{};
 
-  // Celda info helper
-  function celdaInfo(lbl,val){
-    const d=document.createElement('div');
-    d.style.cssText='padding:8px 14px;border-bottom:1px solid var(--gris1);border-right:1px solid var(--gris1);font-size:11px';
-    d.innerHTML='<div style="color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">'+lbl+'</div><div style="font-weight:700;color:#1a3a6b;margin-top:2px">'+val+'</div>';
-    return d;
-  }
-
+  // Tabla info estilo documento (como referencia PDF)
   const infoEl=document.getElementById('apv-info');
-  infoEl.innerHTML='';
-  const campos=[
-    ['Nº Acta',info.acta_num||'—'],['Fecha Evaluación',info.fecha_eval||'—'],
-    ['Prestador',info.empresa||'—'],['NIT',info.nit||'—'],
-    ['Municipio',info.municipio||'—'],['Régimen',info.regimen||'—'],
-    ['Nº Contrato',info.num_contrato||'—'],['Vigencia',info.vigencia||'—'],
-    ['Período Inicio',info.periodo||'—'],['Período Fin',info.periodo_fin||'—'],
-  ];
-  campos.forEach(([l,v])=>infoEl.appendChild(celdaInfo(l,v)));
+  const cs='border:1px solid #ccc;padding:5px 8px;font-size:11px';
+  const lbcs='font-weight:700;white-space:nowrap';
+  infoEl.innerHTML=`<table style="width:100%;border-collapse:collapse">
+    <tr>
+      <td style="${cs};${lbcs}">ACTA Nº:</td><td style="${cs}">${info.acta_num||'—'}</td>
+      <td style="${cs};${lbcs}">FECHA DE EVALUACIÓN:</td><td style="${cs}">${info.fecha_eval||'—'}</td>
+      <td style="${cs};${lbcs}">PERÍODO EVALUADO:</td><td style="${cs}">${info.periodo||'—'}</td>
+    </tr>
+    <tr>
+      <td style="${cs};${lbcs}">VIGENCIA DEL CONTRATO:</td><td style="${cs}" colspan="3">${info.vigencia||'—'}</td>
+      <td style="${cs};${lbcs}">EMPRESA:</td><td style="${cs}">${info.empresa||'—'}</td>
+    </tr>
+    <tr>
+      <td style="${cs};${lbcs}">NIT:</td><td style="${cs}">${info.nit||'—'}</td>
+      <td style="${cs};${lbcs}">RÉGIMEN:</td><td style="${cs}">${info.regimen||'—'}</td>
+      <td style="${cs};${lbcs}">MUNICIPIO:</td><td style="${cs}">${info.municipio||'—'}</td>
+    </tr>
+    <tr>
+      <td style="${cs};${lbcs}">LUGAR:</td><td style="${cs}">${info.lugar||'VALLEDUPAR'}</td>
+      <td style="${cs};${lbcs}">Nº CONTRATO:</td><td style="${cs}" colspan="3">${info.num_contrato||'—'}</td>
+    </tr>
+  </table>`;
+
+  // Textos del acta
+  const textosEl=document.getElementById('apv-textos');
+  const txtRow=(lbl,txt)=>`<tr><td style="${cs};${lbcs};vertical-align:top">${lbl}:</td><td style="${cs}">${txt||'—'}</td></tr>`;
+  textosEl.innerHTML=`<table style="width:100%;border-collapse:collapse">
+    ${txtRow('PUNTOS A TRATAR',info.puntos_tratar)}
+    ${txtRow('OBJETIVO',info.objetivo)}
+    ${txtRow('DESARROLLO Y CONCLUSIONES',info.desarrollo)}
+  </table>`;
 
   // Tabla programas
   const tbody=document.getElementById('apv-tbody');
@@ -3797,46 +3893,45 @@ function renderActaPreview(data){
     const bc=pp>=1?'#e8f5e9':pp>=.9?'#fffde7':'#ffebee';
     const tc=pp>=1?'#2e7d32':pp>=.9?'#7d5a00':'#c62828';
     const tr=document.createElement('tr');
-    tr.style.cssText='border-bottom:1px solid #f0f0f0;background:'+(i%2===0?'#fafafa':'#fff');
-    tr.innerHTML='<td style="padding:7px 12px;color:#333">'+p.nombre+'</td>'
-      +'<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">'+fmt(p.exigido)+'</td>'
-      +'<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">'+fmt(p.reconocido)+'</td>'
-      +'<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums;color:'+(p.descuento>0?'#c62828':'#333')+'">'+fmt(p.descuento)+'</td>'
-      +'<td style="padding:7px 10px;text-align:center"><span style="background:'+bc+';color:'+tc+';font-weight:700;padding:2px 8px;border-radius:4px;font-size:11px">'+(pp*100).toFixed(2)+'%</span></td>';
+    tr.style.cssText='border-bottom:1px solid #eee;background:'+(i%2===0?'#fafafa':'#fff');
+    tr.innerHTML='<td style="padding:6px 10px">'+p.nombre+'</td>'
+      +'<td style="padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fmt(p.exigido)+'</td>'
+      +'<td style="padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fmt(p.reconocido)+'</td>'
+      +'<td style="padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums;color:'+(p.descuento>0?'#c62828':'#333')+'">'+fmt(p.descuento)+'</td>'
+      +'<td style="padding:6px 8px;text-align:center"><span style="background:'+bc+';color:'+tc+';font-weight:700;padding:2px 7px;border-radius:3px;font-size:10.5px">'+(pp*100).toFixed(2)+'%</span></td>';
     tbody.appendChild(tr);
   });
-  // Fila total
   const trTot=document.createElement('tr');
   trTot.style.cssText='background:#1a3a6b;color:#fff;font-weight:800';
   const ptot=tot.pct||0;
-  trTot.innerHTML='<td style="padding:8px 12px">TOTAL</td>'
-    +'<td style="padding:8px 10px;text-align:right">'+fmt(tot.exigido)+'</td>'
-    +'<td style="padding:8px 10px;text-align:right">'+fmt(tot.reconocido)+'</td>'
-    +'<td style="padding:8px 10px;text-align:right">'+fmt(tot.descuento)+'</td>'
-    +'<td style="padding:8px 10px;text-align:center">'+(ptot*100).toFixed(2)+'%</td>';
+  trTot.innerHTML='<td style="padding:7px 10px">TOTAL</td>'
+    +'<td style="padding:7px 8px;text-align:right">'+fmt(tot.exigido)+'</td>'
+    +'<td style="padding:7px 8px;text-align:right">'+fmt(tot.reconocido)+'</td>'
+    +'<td style="padding:7px 8px;text-align:right">'+fmt(tot.descuento)+'</td>'
+    +'<td style="padding:7px 8px;text-align:center">'+(ptot*100).toFixed(2)+'%</td>';
   tbody.appendChild(trTot);
 
-  // Observaciones
+  // Párrafo post gráfico + observaciones
   const obs=document.getElementById('apv-obs');
-  obs.innerHTML=info.observaciones
-    ?'<strong>Observaciones:</strong> '+info.observaciones
-    :'<em style="color:#bbb">Sin observaciones</em>';
+  obs.innerHTML=(info.parrafo_post?'<p style="margin:0 0 8px">'+info.parrafo_post+'</p>':'')
+    +(info.observaciones?'<p style="margin:0"><strong>Observaciones:</strong> '+info.observaciones+'</p>':'');
 
-  // Firmas
-  function celdaFirma(lbl,nombre){
-    const d=document.createElement('div');
-    d.style.cssText='padding:16px 20px;text-align:center;border-right:1px solid var(--gris1)';
-    d.innerHTML='<div style="border-top:1.5px solid #555;width:80%;margin:0 auto 8px"></div>'
-      +'<div style="font-weight:700;font-size:11.5px;color:#1a3a6b">'+(nombre||'—')+'</div>'
-      +'<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:2px">'+lbl+'</div>';
-    return d;
-  }
+  // Firmas (4 celdas)
   const firmas=document.getElementById('apv-firmas');
+  const evalNames=(info.evaluador||'—').split(' / ');
+  const firma=(lbl,nom)=>{
+    const d=document.createElement('div');
+    d.style.cssText='padding:20px 16px;text-align:center;border-right:1px solid #eee';
+    d.innerHTML='<div style="border-top:1px solid #333;width:75%;margin:0 auto 8px;padding-top:4px"></div>'
+      +'<div style="font-weight:700;font-size:11px;color:#1a3a6b">'+(nom||'—')+'</div>'
+      +'<div style="font-size:9.5px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-top:2px">'+lbl+'</div>';
+    return d;
+  };
   firmas.innerHTML='';
-  firmas.appendChild(celdaFirma('Representante IPS',info.rep_ips));
-  firmas.appendChild(celdaFirma('Representante EPSI',info.rep_epsi));
-  firmas.appendChild(celdaFirma('Coordinador',info.coordinador));
-  firmas.appendChild(celdaFirma('Evaluador',info.evaluador));
+  firmas.appendChild(firma('Representante Legal IPS',info.rep_ips));
+  firmas.appendChild(firma('Representante Legal EPSI',info.rep_epsi));
+  firmas.appendChild(firma('Coordinador(a) Baja Complejidad',info.coordinador));
+  firmas.appendChild(firma('Funcionario Evaluador',evalNames[0]||info.evaluador));
 }
 
 function toggle(h){h.nextElementSibling.classList.toggle("open");}
@@ -5030,12 +5125,106 @@ async function cargarEstado(){
 }
 
 function leerInfo(){
-  return {acta_num:v("acta_num"),fecha_eval:v("fecha_eval"),periodo:v("periodo"),periodo_fin:v("periodo_fin"),
+  return {
+    acta_num:v("acta_num"),fecha_eval:v("fecha_eval"),periodo:v("periodo"),periodo_fin:v("periodo_fin"),
     vigencia:v("vigencia"),empresa:v("empresa"),nit:v("nit"),regimen:v("regimen"),municipio:v("municipio"),
-    num_contrato:v("num_contrato"),rep_ips:v("rep_ips"),rep_epsi:v("rep_epsi"),
-    coordinador:v("coordinador"),evaluador:v("evaluador"),observaciones:v("observaciones")};
+    lugar:v("lugar"),num_contrato:v("num_contrato"),rep_ips:v("rep_ips"),rep_epsi:v("rep_epsi"),
+    coordinador:v("coordinador"),evaluador:v("evaluador"),observaciones:v("observaciones"),
+    puntos_tratar:v("puntos_tratar"),objetivo:v("objetivo"),desarrollo:v("desarrollo"),parrafo_post:v("parrafo_post")
+  };
 }
 function v(id){return document.getElementById(id)?.value||"";}
+
+// ── EVALUADORES ─────────────────────────────────────────────────────────────
+const _FUNC_DEFAULT=["JESUS VANEGAS FONTALVO","ITIANIS SARABIA DIAZ","LILIANA MUÑOZ HERNANDEZ"];
+let _evalSeleccionados=[];
+
+function _cargarEvaluadoresUI(){
+  // Cargar lista desde localStorage, fusionar con defaults
+  let stored=[];
+  try{stored=JSON.parse(localStorage.getItem('dusakawi_funcionarios')||'[]');}catch(e){}
+  const lista=[..._FUNC_DEFAULT,...stored.filter(f=>!_FUNC_DEFAULT.includes(f))];
+  const sel=document.getElementById('evaluador_select');
+  if(!sel) return;
+  sel.innerHTML='<option value="">— Seleccionar funcionario —</option>'
+    +lista.map(f=>`<option value="${f}">${f}</option>`).join('');
+  // Pre-seleccionar si ya hay usuario logueado
+  const usr="{{ current_user.nombre }}";
+  if(usr&&lista.includes(usr)){
+    sel.value=usr;
+    _agregarEvaluador();
+  }
+  // Cargar globales guardados
+  const rEpsi=localStorage.getItem('dusakawi_rep_epsi');
+  const coord=localStorage.getItem('dusakawi_coordinador');
+  const epsiEl=document.getElementById('rep_epsi');
+  const coordEl=document.getElementById('coordinador');
+  if(epsiEl){epsiEl.value=rEpsi||'JAVIER CLAVIJO FRANCO';}
+  if(coordEl){coordEl.value=coord||'DIANA CASTILLA BARRAZA';}
+  const el1=document.getElementById('rep_epsi_global_lbl');
+  const el2=document.getElementById('coordinador_global_lbl');
+  if(el1) el1.textContent=rEpsi?'(guardado)':'Global: JAVIER CLAVIJO FRANCO';
+  if(el2) el2.textContent=coord?'(guardado)':'Global: DIANA CASTILLA BARRAZA';
+}
+
+function _agregarEvaluador(){
+  const sel=document.getElementById('evaluador_select');
+  if(!sel||!sel.value) return;
+  const nombre=sel.value;
+  if(_evalSeleccionados.includes(nombre)) return;
+  _evalSeleccionados.push(nombre);
+  _renderEvaluadorChips();
+  // Actualizar campo oculto evaluador
+  document.getElementById('evaluador').value=_evalSeleccionados.join(' / ');
+}
+
+function _renderEvaluadorChips(){
+  const cont=document.getElementById('evaluadores_chips');
+  if(!cont) return;
+  cont.innerHTML=_evalSeleccionados.map((n,i)=>
+    `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--azul4);color:var(--azul);border-radius:20px;padding:4px 12px;font-size:11.5px;font-weight:600">
+      ${n}
+      <button onclick="_quitarEvaluador(${i})" style="border:none;background:none;color:var(--azul);cursor:pointer;font-size:14px;line-height:1;padding:0">&times;</button>
+    </span>`
+  ).join('');
+}
+
+function _quitarEvaluador(idx){
+  _evalSeleccionados.splice(idx,1);
+  _renderEvaluadorChips();
+  document.getElementById('evaluador').value=_evalSeleccionados.join(' / ');
+}
+
+function _guardarGlobal(campo){
+  const val=document.getElementById(campo)?.value||'';
+  if(!val) return;
+  localStorage.setItem('dusakawi_'+campo,val);
+  const lbl=document.getElementById(campo+'_global_lbl');
+  if(lbl){lbl.textContent='(guardado)';lbl.style.color='var(--verde)';}
+  setTimeout(()=>{if(lbl)lbl.style.color='';},2000);
+}
+
+function _autoActaNum(){
+  const contrato=document.getElementById('num_contrato')?.value||'';
+  const trim=document.getElementById('acta_trimestre')?.value||'';
+  if(contrato&&trim){
+    const el=document.getElementById('acta_num');
+    if(el) el.value=contrato+'-'+trim;
+    const tit=document.getElementById('step5-acta-titulo');
+    if(tit) tit.textContent='Acta Nº '+contrato+'-'+trim;
+  }
+}
+
+function _tab5(tab){
+  document.getElementById('tab5-form').style.display=tab==='form'?'block':'none';
+  document.getElementById('tab5-prev').style.display=tab==='prev'?'block':'none';
+  document.getElementById('tab5-form-btn').style.cssText='padding:10px 18px;font-size:12.5px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:2.5px solid '+(tab==='form'?'var(--azul);color:var(--azul)':'transparent;color:var(--gris3)');
+  document.getElementById('tab5-prev-btn').style.cssText='padding:10px 18px;font-size:12.5px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:2.5px solid '+(tab==='prev'?'var(--azul);color:var(--azul)':'transparent;color:var(--gris3)');
+  if(tab==='prev') renderActaPreview(S._resultados||{resumen:[],totales:{}});
+}
+
+// Inicializar al cargar
+document.addEventListener('DOMContentLoaded',_cargarEvaluadoresUI);
 function fmt(n){if(n==null)return"$0";return"$"+parseFloat(n).toLocaleString("es-CO",{minimumFractionDigits:2,maximumFractionDigits:2});}
 function pct(n){return(parseFloat(n||0)*100).toFixed(2)+"%";}
 
