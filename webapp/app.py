@@ -52,7 +52,7 @@ def _get_db():
         return None
     try:
         _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(str(_DB_PATH), isolation_level=None)
+        conn = sqlite3.connect(str(_DB_PATH), isolation_level=None, timeout=15)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
