@@ -353,6 +353,21 @@ html.dark .it-btn.active{color:var(--azul2)}
         <div><div class="pr-card-title">Carga de Datos RIPS</div><div class="pr-card-sub">Arrastra o selecciona archivos TXT (Res. 3374) o JSON</div></div>
       </div>
       <div class="pr-card-body">
+        <!-- Buscador de prestador -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:11px;font-weight:600;color:var(--gris3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em">Prestador a evaluar</div>
+          <div style="position:relative">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px">🔍</span>
+            <input id="dash-buscar-ips" class="form-control" placeholder="Buscar por nombre, NIT o Nº contrato..."
+              oninput="_dashBuscarIPS(this.value)" autocomplete="off"
+              style="padding-left:32px;font-size:12px">
+          </div>
+          <div id="dash-ips-resultados" style="display:none;border:1px solid var(--gris1);border-radius:8px;overflow:hidden;max-height:180px;overflow-y:auto;background:var(--card-bg);margin-top:4px;box-shadow:var(--shadow-sm)"></div>
+          <div id="dash-ips-seleccionada" style="display:none;margin-top:6px;padding:7px 12px;background:var(--verde3);border:1px solid var(--verde2);border-radius:8px;font-size:11.5px;color:var(--verde);display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span id="dash-ips-sel-txt"></span>
+            <button onclick="_dashLimpiarIPS()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gris3);padding:0">✕</button>
+          </div>
+        </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
           <!-- TXT -->
           <label id="dash-lbl-txt" style="border:2px dashed var(--gris2);border-radius:10px;padding:22px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;transition:.15s;background:var(--gris0)"
@@ -3885,6 +3900,58 @@ async function eliminarIPS(id){
     alert('Error al eliminar: '+e.message);
   }
 }
+
+function _dashBuscarIPS(q){
+  const res=document.getElementById('dash-ips-resultados');
+  q=q.trim().toLowerCase();
+  if(!q){res.style.display='none';return;}
+  const matches=(_ips_list||[]).filter(ip=>
+    ip.nombre.toLowerCase().includes(q)||
+    (ip.nit||'').toLowerCase().includes(q)||
+    (ip.num_contrato||'').toLowerCase().includes(q)
+  ).slice(0,8);
+  if(!matches.length){
+    res.style.display='block';
+    res.innerHTML='<div style="padding:10px 14px;font-size:12px;color:var(--gris3)">Sin resultados</div>';
+    return;
+  }
+  res.style.display='block';
+  res.innerHTML=matches.map(ip=>`
+    <div onclick="_dashSeleccionarIPS('${ip.id}')"
+      style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .1s"
+      onmouseover="this.style.background='var(--gris0)'" onmouseout="this.style.background=''">
+      <div style="font-size:12px;font-weight:700">${ip.nombre}</div>
+      <div style="font-size:10.5px;color:var(--gris3)">NIT: ${ip.nit||'—'} · Contrato: ${ip.num_contrato||'—'} · ${ip.municipio||''}</div>
+    </div>`).join('');
+}
+
+function _dashSeleccionarIPS(id){
+  const ip=(_ips_list||[]).find(i=>i.id===id);
+  if(!ip) return;
+  S.ips_activa=ip;
+  if(ip.metas&&Object.keys(ip.metas).length){
+    S.metas=JSON.parse(JSON.stringify(ip.metas));
+  }
+  document.getElementById('dash-ips-resultados').style.display='none';
+  document.getElementById('dash-buscar-ips').value='';
+  const sel=document.getElementById('dash-ips-seleccionada');
+  const txt=document.getElementById('dash-ips-sel-txt');
+  const nMetas=_contarMetasActivas(ip.metas||{});
+  txt.innerHTML=`✅ <strong>${ip.nombre}</strong> · NIT ${ip.nit||'—'} · ${nMetas} actividades con meta`;
+  sel.style.display='flex';
+  // Habilitar botones de evaluación si ya hay RIPS
+  _dashActualizarBotonesEval();
+}
+
+function _dashLimpiarIPS(){
+  S.ips_activa=null;
+  S.metas={};
+  document.getElementById('dash-ips-seleccionada').style.display='none';
+  document.getElementById('dash-buscar-ips').value='';
+  _dashActualizarBotonesEval();
+}
+
+function _dashActualizarBotonesEval(){}
 
 function _step1BuscarIPS(q){
   const res=document.getElementById('step1-ips-resultados');
