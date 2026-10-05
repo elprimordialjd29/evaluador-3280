@@ -691,48 +691,12 @@ html.dark .it-btn.active{color:var(--azul2)}
         <!-- Vista Previa tab -->
         <div id="tab5-prev" style="display:none;padding:16px">
           <div id="acta-preview" style="border:1.5px solid var(--gris1);border-radius:10px;overflow:hidden;background:#fff;max-width:900px;margin:0 auto">
-            <!-- Encabezado institucional -->
-            <table style="width:100%;border-collapse:collapse;border-bottom:2px solid #1a3a6b">
-              <tr>
-                <td style="padding:10px 14px;width:120px;vertical-align:middle">
-                  <div style="font-size:11px;font-weight:900;color:#1a3a6b;line-height:1.2">DUSAKAWI<br>EPSI</div>
-                </td>
-                <td style="padding:10px;text-align:center;vertical-align:middle;border-left:1px solid #ddd;border-right:1px solid #ddd">
-                  <div style="font-size:10px;color:#666;margin-bottom:3px">PROCESO: GESTIÓN DEL RIESGO EN SALUD</div>
-                  <div style="font-size:15px;font-weight:900;color:#1a3a6b">ACTA DE EVALUACIÓN DE SERVICIOS</div>
-                </td>
-                <td style="padding:10px 14px;width:160px;font-size:10px;color:#333;line-height:1.6;vertical-align:top">
-                  <div><strong>CÓDIGO:</strong> DGR-BAJ-FT-11</div>
-                  <div><strong>VERSIÓN:</strong> 02</div>
-                  <div><strong>EMISIÓN:</strong> 15/06/2022</div>
-                  <div><strong>VIGENCIA:</strong> 02/03/2028</div>
-                  <div><strong>PÁGINA:</strong> 1 DE 2</div>
-                </td>
-              </tr>
-            </table>
-            <!-- Tabla info prestador -->
-            <div id="apv-info" style="font-size:11px"></div>
-            <!-- Textos -->
-            <div id="apv-textos" style="font-size:11px;padding:0 0 4px"></div>
-            <!-- Tabla programas -->
-            <div style="overflow-x:auto">
-              <table style="width:100%;border-collapse:collapse;font-size:11px">
-                <thead>
-                  <tr style="background:#1a3a6b;color:#fff">
-                    <th style="padding:7px 10px;text-align:left">Programa / Ruta</th>
-                    <th style="padding:7px 8px;text-align:right;white-space:nowrap">Vr Exigido</th>
-                    <th style="padding:7px 8px;text-align:right;white-space:nowrap">Vr Reconocido</th>
-                    <th style="padding:7px 8px;text-align:right;white-space:nowrap">Descuento</th>
-                    <th style="padding:7px 8px;text-align:center;white-space:nowrap">% Cumpl.</th>
-                  </tr>
-                </thead>
-                <tbody id="apv-tbody"></tbody>
-              </table>
-            </div>
-            <!-- Observaciones -->
-            <div id="apv-obs" style="padding:10px 14px;border-top:1px solid #eee;font-size:11px"></div>
-            <!-- Firmas -->
-            <div id="apv-firmas" style="display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #eee"></div>
+            <!-- Todo se genera dinámicamente por renderActaPreview() -->
+            <div id="apv-info"></div>
+            <div id="apv-textos" style="display:none"></div>
+            <tbody id="apv-tbody" style="display:none"></tbody>
+            <div id="apv-obs"></div>
+            <div id="apv-firmas"></div>
           </div>
         </div>
       </div>
@@ -3851,88 +3815,167 @@ function renderResultados(data){
 function renderActaPreview(data){
   const info=leerInfo();
   const tot=data.totales||{};
+  const resumen=data.resumen||[];
+  const cs='border:1px solid #ccc;padding:6px 10px;font-size:11px';
+  const lbl=`font-weight:700;background:#f0f4fa;white-space:nowrap`;
 
-  // Tabla info estilo documento (como referencia PDF)
-  const infoEl=document.getElementById('apv-info');
-  const cs='border:1px solid #ccc;padding:5px 8px;font-size:11px';
-  const lbcs='font-weight:700;white-space:nowrap';
-  infoEl.innerHTML=`<table style="width:100%;border-collapse:collapse">
-    <tr>
-      <td style="${cs};${lbcs}">ACTA Nº:</td><td style="${cs}">${info.acta_num||'—'}</td>
-      <td style="${cs};${lbcs}">FECHA DE EVALUACIÓN:</td><td style="${cs}">${info.fecha_eval||'—'}</td>
-      <td style="${cs};${lbcs}">PERÍODO EVALUADO:</td><td style="${cs}">${info.periodo||'—'}</td>
-    </tr>
-    <tr>
-      <td style="${cs};${lbcs}">VIGENCIA DEL CONTRATO:</td><td style="${cs}" colspan="3">${info.vigencia||'—'}</td>
-      <td style="${cs};${lbcs}">EMPRESA:</td><td style="${cs}">${info.empresa||'—'}</td>
-    </tr>
-    <tr>
-      <td style="${cs};${lbcs}">NIT:</td><td style="${cs}">${info.nit||'—'}</td>
-      <td style="${cs};${lbcs}">RÉGIMEN:</td><td style="${cs}">${info.regimen||'—'}</td>
-      <td style="${cs};${lbcs}">MUNICIPIO:</td><td style="${cs}">${info.municipio||'—'}</td>
-    </tr>
-    <tr>
-      <td style="${cs};${lbcs}">LUGAR:</td><td style="${cs}">${info.lugar||'VALLEDUPAR'}</td>
-      <td style="${cs};${lbcs}">Nº CONTRATO:</td><td style="${cs}" colspan="3">${info.num_contrato||'—'}</td>
-    </tr>
-  </table>`;
+  // ── Encabezado institucional ─────────────────────────────────────────────
+  const hdrTable=(pag)=>`
+    <table style="width:100%;border-collapse:collapse;border-bottom:2px solid #1a3a6b;margin-bottom:0">
+      <tr>
+        <td style="padding:8px 12px;width:110px;vertical-align:middle">
+          <div style="font-size:13px;font-weight:900;color:#1a3a6b;line-height:1.2">DUSAKAWI<br>EPSI</div>
+        </td>
+        <td style="padding:8px;text-align:center;vertical-align:middle;border-left:1px solid #ddd;border-right:1px solid #ddd">
+          <div style="font-size:9px;color:#666;margin-bottom:2px">PROCESO: GESTIÓN DEL RIESGO EN SALUD</div>
+          <div style="font-size:14px;font-weight:900;color:#1a3a6b">ACTA DE EVALUACIÓN DE SERVICIOS</div>
+        </td>
+        <td style="padding:8px 12px;width:155px;font-size:10px;color:#333;line-height:1.7;vertical-align:top">
+          <div><b>CÓDIGO:</b> DGR-BAJ-FT-11</div>
+          <div><b>VERSIÓN:</b> 02</div>
+          <div><b>EMISIÓN:</b> 15/06/2022</div>
+          <div><b>VIGENCIA:</b> 02/03/2028</div>
+          <div><b>PÁGINA</b> ${pag}</div>
+        </td>
+      </tr>
+    </table>`;
 
-  // Textos del acta
-  const textosEl=document.getElementById('apv-textos');
-  const txtRow=(lbl,txt)=>`<tr><td style="${cs};${lbcs};vertical-align:top">${lbl}:</td><td style="${cs}">${txt||'—'}</td></tr>`;
-  textosEl.innerHTML=`<table style="width:100%;border-collapse:collapse">
-    ${txtRow('PUNTOS A TRATAR',info.puntos_tratar)}
-    ${txtRow('OBJETIVO',info.objetivo)}
-    ${txtRow('DESARROLLO Y CONCLUSIONES',info.desarrollo)}
-  </table>`;
+  // ── Info prestador ───────────────────────────────────────────────────────
+  const infoTable=`
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <tr>
+        <td style="${cs};${lbl}">ACTA N°:</td><td style="${cs}" colspan="3">${info.acta_num||'—'}</td>
+        <td style="${cs};${lbl}">FECHA DE EVALUACIÓN:</td><td style="${cs}">${info.fecha_eval||'—'}</td>
+      </tr>
+      <tr>
+        <td style="${cs};${lbl}">PERÍODO EVALUADO:</td><td style="${cs}" colspan="5">${info.periodo||'—'}${info.periodo_fin?(' — '+info.periodo_fin):''}</td>
+      </tr>
+      <tr>
+        <td style="${cs};${lbl}">VIGENCIA DEL CONTRATO:</td><td style="${cs}" colspan="5">${info.vigencia||'—'}</td>
+      </tr>
+      <tr>
+        <td style="${cs};${lbl}">EMPRESA / IPS:</td><td style="${cs}" colspan="3">${info.empresa||'—'}</td>
+        <td style="${cs};${lbl}">NIT:</td><td style="${cs}">${info.nit||'—'}</td>
+      </tr>
+      <tr>
+        <td style="${cs};${lbl}">RÉGIMEN:</td><td style="${cs}">${info.regimen||'—'}</td>
+        <td style="${cs};${lbl}">MUNICIPIO:</td><td style="${cs}">${info.municipio||'—'}</td>
+        <td style="${cs};${lbl}">LUGAR:</td><td style="${cs}">${info.lugar||'VALLEDUPAR'}</td>
+      </tr>
+      <tr>
+        <td style="${cs};${lbl}">N° CONTRATO:</td><td style="${cs}" colspan="5">${info.num_contrato||'—'}</td>
+      </tr>
+    </table>`;
 
-  // Tabla programas
-  const tbody=document.getElementById('apv-tbody');
-  tbody.innerHTML='';
-  (data.resumen||[]).forEach((p,i)=>{
-    const pp=p.pct||0;
-    const bc=pp>=1?'#e8f5e9':pp>=.9?'#fffde7':'#ffebee';
-    const tc=pp>=1?'#2e7d32':pp>=.9?'#7d5a00':'#c62828';
-    const tr=document.createElement('tr');
-    tr.style.cssText='border-bottom:1px solid #eee;background:'+(i%2===0?'#fafafa':'#fff');
-    tr.innerHTML='<td style="padding:6px 10px">'+p.nombre+'</td>'
-      +'<td style="padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fmt(p.exigido)+'</td>'
-      +'<td style="padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums">'+fmt(p.reconocido)+'</td>'
-      +'<td style="padding:6px 8px;text-align:right;font-variant-numeric:tabular-nums;color:'+(p.descuento>0?'#c62828':'#333')+'">'+fmt(p.descuento)+'</td>'
-      +'<td style="padding:6px 8px;text-align:center"><span style="background:'+bc+';color:'+tc+';font-weight:700;padding:2px 7px;border-radius:3px;font-size:10.5px">'+(pp*100).toFixed(2)+'%</span></td>';
-    tbody.appendChild(tr);
-  });
-  const trTot=document.createElement('tr');
-  trTot.style.cssText='background:#1a3a6b;color:#fff;font-weight:800';
-  const ptot=tot.pct||0;
-  trTot.innerHTML='<td style="padding:7px 10px">TOTAL</td>'
-    +'<td style="padding:7px 8px;text-align:right">'+fmt(tot.exigido)+'</td>'
-    +'<td style="padding:7px 8px;text-align:right">'+fmt(tot.reconocido)+'</td>'
-    +'<td style="padding:7px 8px;text-align:right">'+fmt(tot.descuento)+'</td>'
-    +'<td style="padding:7px 8px;text-align:center">'+(ptot*100).toFixed(2)+'%</td>';
-  tbody.appendChild(trTot);
+  // ── Textos ───────────────────────────────────────────────────────────────
+  const txtBlock=(lbl,txt)=>txt?`
+    <div style="border:1px solid #ccc;margin-top:-1px">
+      <div style="background:#f0f4fa;padding:4px 10px;font-weight:700;font-size:10.5px;border-bottom:1px solid #ccc">${lbl}</div>
+      <div style="padding:7px 10px;font-size:11px;line-height:1.5">${txt}</div>
+    </div>`:'';
 
-  // Párrafo post gráfico + observaciones
-  const obs=document.getElementById('apv-obs');
-  obs.innerHTML=(info.parrafo_post?'<p style="margin:0 0 8px">'+info.parrafo_post+'</p>':'')
-    +(info.observaciones?'<p style="margin:0"><strong>Observaciones:</strong> '+info.observaciones+'</p>':'');
+  // ── Tabla totales ────────────────────────────────────────────────────────
+  const metaTot=resumen.reduce((s,p)=>s+(p.meta_total||0),0);
+  const ejecTot=resumen.reduce((s,p)=>s+(p.ejec_total||0),0);
+  const pctTot=tot.pct||0;
+  const pctColor=(p)=>p>=1?'#2e7d32':p>=.9?'#7d5a00':'#c62828';
+  const pctBg=(p)=>p>=1?'#e8f5e9':p>=.9?'#fffde7':'#ffebee';
+  const fmtN=(n)=>Number(n||0).toLocaleString('es-CO');
 
-  // Firmas (4 celdas)
-  const firmas=document.getElementById('apv-firmas');
+  const totalesBlock=`
+    <div style="border:1px solid #ccc;margin-top:8px;font-size:11px">
+      <div style="background:#1a3a6b;color:#fff;padding:5px 10px;font-weight:700;font-size:11px">
+        TABLA – CÁLCULO TOTAL RUTAS INTEGRALES DE ATENCIÓN EN SALUD (PROGRAMADO VS EJECUTADO)
+      </div>
+      <table style="width:100%;border-collapse:collapse">
+        <tr style="background:#f0f4fa">
+          <td style="${cs};font-weight:700">TOTAL ACTIVIDADES PROGRAMADAS</td>
+          <td style="${cs};text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${fmtN(metaTot)}</td>
+        </tr>
+        <tr>
+          <td style="${cs}">TOTAL ACTIVIDADES EJECUTADAS SEGÚN PROGRAMADO</td>
+          <td style="${cs};text-align:right;font-variant-numeric:tabular-nums">${fmtN(ejecTot)}</td>
+        </tr>
+        <tr style="background:#f0f4fa">
+          <td style="${cs};font-weight:700">PORCENTAJE DE CUMPLIMIENTO</td>
+          <td style="${cs};text-align:right;font-weight:900;color:${pctColor(pctTot)}">${(pctTot*100).toFixed(0)}%</td>
+        </tr>
+      </table>
+      <table style="width:100%;border-collapse:collapse;margin-top:0">
+        <thead>
+          <tr style="background:#1a3a6b;color:#fff">
+            <th style="padding:6px 10px;text-align:left;font-size:11px">PROGRAMA / RUTA INTEGRAL</th>
+            <th style="padding:6px 8px;text-align:right;white-space:nowrap;font-size:11px">CANTIDAD<br>PROGRAMADA</th>
+            <th style="padding:6px 8px;text-align:right;white-space:nowrap;font-size:11px">CANTIDAD<br>EJECUTADA</th>
+            <th style="padding:6px 8px;text-align:center;white-space:nowrap;font-size:11px">% CUMPLIMIENTO</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${resumen.map((p,i)=>{
+            const pp=p.pct||0;
+            const bg=i%2===0?'#fafafa':'#fff';
+            return `<tr style="border-bottom:1px solid #eee;background:${bg}">
+              <td style="padding:5px 10px;font-size:11px">${p.nombre}</td>
+              <td style="padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums;font-size:11px">${fmtN(p.meta_total)}</td>
+              <td style="padding:5px 8px;text-align:right;font-variant-numeric:tabular-nums;font-size:11px">${fmtN(p.ejec_total)}</td>
+              <td style="padding:5px 8px;text-align:center">
+                <span style="background:${pctBg(pp)};color:${pctColor(pp)};font-weight:700;padding:2px 8px;border-radius:3px;font-size:10.5px">${(pp*100).toFixed(0)}%</span>
+              </td></tr>`;
+          }).join('')}
+          <tr style="background:#1a3a6b;color:#fff;font-weight:800">
+            <td style="padding:7px 10px;font-size:11px">TOTAL RUTAS INTEGRALES</td>
+            <td style="padding:7px 8px;text-align:right;font-variant-numeric:tabular-nums">${fmtN(metaTot)}</td>
+            <td style="padding:7px 8px;text-align:right;font-variant-numeric:tabular-nums">${fmtN(ejecTot)}</td>
+            <td style="padding:7px 8px;text-align:center">${(pctTot*100).toFixed(0)}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  // ── Observaciones pre-llenadas ───────────────────────────────────────────
+  const obsDefault=`• Las Rutas Integrales de Atención en Salud son objeto de seguimiento en términos de calidad, oportunidad, cobertura y resolutividad.\n\nEn tal sentido, se realizará el SEGUIMIENTO Y EVALUACIÓN mensual por parte de DUSAKAWI EPSI y de manera trimestral entre las Partes conjuntamente las respectivas REUNIONES DE GESTIÓN COMPARTIDA. En el evento en que, de las actividades de seguimiento y evaluación, así como de las reuniones de gestión compartida se determine el incumplimiento de una o más metas, el prestador de servicios deberá elaborar y presentar ante la EPSI dentro de los cinco (5) días hábiles siguientes a la realización de la reunión de gestión compartida un Plan de Mejoramiento que defina acciones y estrategias que le permita lograr el mayor porcentaje de cumplimiento de las metas incumplidas y las sucesivas.`;
+  const obsText=info.observaciones||obsDefault;
+
+  // ── Firmas ───────────────────────────────────────────────────────────────
   const evalNames=(info.evaluador||'—').split(' / ');
-  const firma=(lbl,nom)=>{
-    const d=document.createElement('div');
-    d.style.cssText='padding:20px 16px;text-align:center;border-right:1px solid #eee';
-    d.innerHTML='<div style="border-top:1px solid #333;width:75%;margin:0 auto 8px;padding-top:4px"></div>'
-      +'<div style="font-weight:700;font-size:11px;color:#1a3a6b">'+(nom||'—')+'</div>'
-      +'<div style="font-size:9.5px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-top:2px">'+lbl+'</div>';
-    return d;
-  };
-  firmas.innerHTML='';
-  firmas.appendChild(firma('Representante Legal IPS',info.rep_ips));
-  firmas.appendChild(firma('Representante Legal EPSI',info.rep_epsi));
-  firmas.appendChild(firma('Coordinador(a) Baja Complejidad',info.coordinador));
-  firmas.appendChild(firma('Funcionario Evaluador',evalNames[0]||info.evaluador));
+  const firmaCell=(nom,cargo)=>`
+    <div style="padding:30px 16px 16px;text-align:center;border-right:1px solid #ddd">
+      <div style="border-top:1.5px solid #333;width:80%;margin:0 auto 10px"></div>
+      <div style="font-weight:700;font-size:11.5px;color:#1a3a6b;margin-bottom:3px">${nom||'—'}</div>
+      <div style="font-size:9.5px;color:#555;text-transform:uppercase;letter-spacing:.4px">${cargo}</div>
+    </div>`;
+
+  // ── Renderizar todo ──────────────────────────────────────────────────────
+  document.getElementById('apv-info').innerHTML=`
+    ${hdrTable('1 DE 2')}
+    ${infoTable}
+    ${txtBlock('PUNTOS A TRATAR',info.puntos_tratar)}
+    ${txtBlock('OBJETIVO',info.objetivo)}
+    ${txtBlock('DESARROLLO Y CONCLUSIONES (ANTES DEL GRÁFICO)',info.desarrollo)}`;
+
+  document.getElementById('apv-textos').innerHTML='';
+
+  document.getElementById('apv-tbody').innerHTML='';
+  document.querySelector('#acta-preview table:last-of-type')?.remove?.();
+
+  const obsEl=document.getElementById('apv-obs');
+  obsEl.innerHTML=`
+    ${totalesBlock}
+    ${txtBlock('PÁRRAFO DESPUÉS DEL GRÁFICO',info.parrafo_post)}
+    <div style="border:1px solid #ccc;margin-top:-1px">
+      <div style="background:#f0f4fa;padding:4px 10px;font-weight:700;font-size:10.5px;border-bottom:1px solid #ccc">OBSERVACIONES</div>
+      <div style="padding:8px 10px;font-size:11px;line-height:1.6;white-space:pre-line">${obsText}</div>
+    </div>
+    <!-- Página 2 encabezado -->
+    <div style="margin-top:18px">${hdrTable('2 DE 2')}</div>`;
+
+  const firmasEl=document.getElementById('apv-firmas');
+  firmasEl.style.cssText='display:grid;grid-template-columns:1fr 1fr;border-top:1px solid #eee;margin-top:0';
+  firmasEl.innerHTML=
+    firmaCell(info.rep_ips,'Representante Legal IPS')
+    +firmaCell(info.rep_epsi,'Representante Legal EPSI')
+    +firmaCell(info.coordinador,'Coordinador(a) de Baja Complejidad')
+    +firmaCell(evalNames[0]||info.evaluador,'Funcionario que realiza la Evaluación');
 }
 
 function toggle(h){h.nextElementSibling.classList.toggle("open");}

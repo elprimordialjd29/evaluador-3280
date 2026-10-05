@@ -314,9 +314,13 @@ class RIPSEvaluator:
         """Devuelve lista plana de programas con totales para el acta"""
         resumen = []
         for prog_id, r in resultados.items():
+            meta_total = sum(a["meta"] for a in r.get("actividades", []))
+            ejec_total = sum(a["ejecutado"] for a in r.get("actividades", []))
             resumen.append({
                 "id":           prog_id,
                 "nombre":       r["nombre_acta"],
+                "meta_total":   meta_total,
+                "ejec_total":   ejec_total,
                 "exigido":      r["total_exigido"],
                 "reconocido":   r["total_reconocido"],
                 "descuento":    r["total_descuento"],
