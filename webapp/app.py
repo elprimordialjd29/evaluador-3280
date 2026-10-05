@@ -372,6 +372,9 @@ def logout():
 @login_required
 def index():
     user = _get_current_user()
+    if user is None:
+        session.clear()
+        return redirect(url_for("login_page"))
     server_label = os.environ.get("SERVER_LABEL", "")
     db_ok = _get_db() is not None
     return render_template("index.html", current_user=user,
