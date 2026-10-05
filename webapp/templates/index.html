@@ -443,6 +443,25 @@ html.dark .it-btn.active{color:var(--azul2)}
 
     <!-- Step 1 -->
     <div id="step1" class="step-pane">
+      <!-- Buscador rápido de prestador -->
+      <div class="pr-card" style="margin-bottom:14px">
+        <div class="pr-card-header" style="padding:12px 16px">
+          <div class="pr-card-icon" style="font-size:16px">🔍</div>
+          <div><div class="pr-card-title" style="font-size:13px">Cargar datos desde prestador registrado</div>
+          <div class="pr-card-sub" style="font-size:11px">Busca por nombre, NIT o Nº contrato para auto-rellenar el formulario</div></div>
+        </div>
+        <div class="pr-card-body" style="padding:10px 16px 14px">
+          <div style="position:relative">
+            <input id="step1-buscar-ips" class="form-control" placeholder="Buscar prestador por nombre, NIT o contrato..."
+              oninput="_step1BuscarIPS(this.value)"
+              autocomplete="off"
+              style="padding-left:32px">
+            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris3);pointer-events:none">🔍</span>
+          </div>
+          <div id="step1-ips-resultados" style="display:none;margin-top:6px;border:1px solid var(--gris1);border-radius:8px;overflow:hidden;max-height:200px;overflow-y:auto;background:var(--card-bg)"></div>
+          <div id="step1-ips-seleccionada" style="display:none;margin-top:8px;padding:8px 12px;background:var(--verde3);border:1px solid var(--verde2);border-radius:8px;font-size:11.5px;color:var(--verde)"></div>
+        </div>
+      </div>
       <div class="pr-card">
         <div class="pr-card-header"><div class="pr-card-icon">📋</div><div><div class="pr-card-title">Datos del Acta</div><div class="pr-card-sub">Información del prestador y periodo evaluado</div></div></div>
         <div class="pr-card-body">
@@ -3865,6 +3884,59 @@ async function eliminarIPS(id){
   } catch(e){
     alert('Error al eliminar: '+e.message);
   }
+}
+
+function _step1BuscarIPS(q){
+  const res=document.getElementById('step1-ips-resultados');
+  q=q.trim().toLowerCase();
+  if(!q){res.style.display='none';return;}
+  const matches=(_ips_list||[]).filter(ip=>
+    ip.nombre.toLowerCase().includes(q)||
+    (ip.nit||'').toLowerCase().includes(q)||
+    (ip.num_contrato||'').toLowerCase().includes(q)
+  ).slice(0,8);
+  if(!matches.length){
+    res.style.display='block';
+    res.innerHTML='<div style="padding:10px 14px;font-size:12px;color:var(--gris3)">Sin resultados</div>';
+    return;
+  }
+  res.style.display='block';
+  res.innerHTML=matches.map(ip=>`
+    <div onclick="_step1SeleccionarIPS('${ip.id}')"
+      style="padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .1s"
+      onmouseover="this.style.background='var(--gris0)'" onmouseout="this.style.background=''">
+      <div style="font-size:12px;font-weight:700">${ip.nombre}</div>
+      <div style="font-size:10.5px;color:var(--gris3)">NIT: ${ip.nit||'—'} · Contrato: ${ip.num_contrato||'—'} · ${ip.municipio||''}</div>
+    </div>`).join('');
+}
+
+function _step1SeleccionarIPS(id){
+  const ip=(_ips_list||[]).find(i=>i.id===id);
+  if(!ip) return;
+  // Auto-rellenar campos del formulario
+  const set=(fid,val)=>{const el=document.getElementById(fid);if(el&&val)el.value=val;};
+  set('empresa', ip.nombre);
+  set('nit', ip.nit);
+  set('municipio', ip.municipio);
+  set('num_contrato', ip.num_contrato);
+  set('rep_ips', ip.rep_legal);
+  const sel=document.getElementById('regimen');
+  if(sel&&ip.regimen) sel.value=ip.regimen;
+  if(ip.vigencia_inicio&&ip.vigencia_fin){
+    const fmt=d=>d?d.split('T')[0]:'';
+    set('vigencia', `${fmt(ip.vigencia_inicio)} - ${fmt(ip.vigencia_fin)}`);
+  }
+  // Cargar metas al estado de sesión
+  if(ip.metas&&Object.keys(ip.metas).length){
+    S.metas=JSON.parse(JSON.stringify(ip.metas));
+  }
+  S.ips_activa=ip;
+  // Cerrar buscador y mostrar confirmación
+  document.getElementById('step1-ips-resultados').style.display='none';
+  document.getElementById('step1-buscar-ips').value='';
+  const sel2=document.getElementById('step1-ips-seleccionada');
+  sel2.style.display='block';
+  sel2.innerHTML=`✅ Prestador cargado: <strong>${ip.nombre}</strong> · ${_contarMetasActivas(ip.metas||{})} actividades con meta`;
 }
 
 function iniciarEvalIPSMant(id){
