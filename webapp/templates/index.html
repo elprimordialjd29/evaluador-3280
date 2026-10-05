@@ -3738,70 +3738,66 @@ function renderResultados(data){
 function toggle(h){h.nextElementSibling.classList.toggle("open");}
 
 function renderChart(res){
-  // Destruir gráficas anteriores
   if(window._charts){window._charts.forEach(c=>c.destroy());window._charts=[];}
   else window._charts=[];
   const container=document.getElementById("charts-container");
   container.innerHTML="";
 
+  // Una barra por programa (nivel programa)
+  const lbls=[],vals=[],cols=[];
   for(const[,r] of Object.entries(res)){
-    const acts=(r.actividades||[]).filter(a=>a.pct_cumplimiento!==undefined);
-    if(!acts.length) continue;
-
-    const lbls=acts.map(a=>{
-      const d=(a.descripcion||"").toUpperCase();
-      return d.length>40?d.substring(0,38)+"…":d;
-    });
-    const vals=acts.map(a=>parseFloat(((a.pct_cumplimiento||0)*100).toFixed(1)));
-    const cols=vals.map(p=>p>=100?"#4CAF82":p>=90?"#F4B942":"#C00000");
-
-    // Altura dinámica: mínimo 260px, 36px por barra
-    const h=Math.max(260, acts.length*36+80);
-
-    const wrap=document.createElement("div");
-    wrap.className="pr-card";
-    wrap.style.marginBottom="18px";
-
-    const titleDiv=document.createElement("div");
-    titleDiv.className="pr-card-header";
-    titleDiv.innerHTML=`<div class="pr-card-icon">📊</div><div><div class="pr-card-title" style="font-size:13px;text-transform:uppercase;letter-spacing:.5px">${(r.nombre||"").toUpperCase()}</div></div>`;
-    wrap.appendChild(titleDiv);
-
-    const body=document.createElement("div");
-    body.className="pr-card-body";
-    const box=document.createElement("div");
-    box.style.cssText=`position:relative;height:${h}px;margin-top:4px`;
-    const canvas=document.createElement("canvas");
-    box.appendChild(canvas);
-    body.appendChild(box);
-    wrap.appendChild(body);
-    container.appendChild(wrap);
-
-    const ch=new Chart(canvas.getContext("2d"),{type:"bar",
-      data:{labels:lbls,datasets:[{
-        label:"% Cumplimiento",data:vals,backgroundColor:cols,
-        borderRadius:4,maxBarThickness:42
-      }]},
-      options:{
-        indexAxis:"y",
-        responsive:true,maintainAspectRatio:false,
-        plugins:{
-          legend:{display:false},
-          tooltip:{callbacks:{label:c=>`${c.formattedValue}%`}},
-          datalabels:{
-            anchor:"end",align:"end",
-            formatter:v=>`${v}%`,
-            color:"#333",font:{size:11,weight:"bold"}
-          }
-        },
-        scales:{
-          x:{min:0,max:120,ticks:{callback:vv=>`${vv}%`,stepSize:20},grid:{color:"#E8ECF2"}},
-          y:{ticks:{font:{size:10}},grid:{display:false}}
-        }
-      }
-    });
-    window._charts.push(ch);
+    const p=parseFloat(((r.pct_cumplimiento||0)*100).toFixed(1));
+    lbls.push((r.nombre||"").toUpperCase());
+    vals.push(p);
+    cols.push(p>=100?"#4CAF82":p>=90?"#F4B942":"#C00000");
   }
+  if(!lbls.length) return;
+
+  const wrap=document.createElement("div");
+  wrap.className="pr-card";
+  wrap.style.marginBottom="18px";
+
+  const titleDiv=document.createElement("div");
+  titleDiv.className="pr-card-header";
+  titleDiv.innerHTML='<div class="pr-card-icon">📊</div><div><div class="pr-card-title" style="font-size:13px;text-transform:uppercase;letter-spacing:.5px">PROMOCIÓN Y MANTENIMIENTO DE LA SALUD</div></div>';
+  wrap.appendChild(titleDiv);
+
+  const body=document.createElement("div");
+  body.className="pr-card-body";
+  const box=document.createElement("div");
+  // altura fija suficiente para labels rotados
+  box.style.cssText="position:relative;height:420px;margin-top:8px";
+  const canvas=document.createElement("canvas");
+  box.appendChild(canvas);
+  body.appendChild(box);
+  wrap.appendChild(body);
+  container.appendChild(wrap);
+
+  const ch=new Chart(canvas.getContext("2d"),{
+    type:"bar",
+    data:{labels:lbls,datasets:[{
+      label:"% Cumplimiento",data:vals,backgroundColor:cols,
+      borderRadius:4,maxBarThickness:60
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:30}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>`${c.formattedValue}%`}},
+        datalabels:{
+          anchor:"end",align:"top",
+          formatter:v=>`${v}%`,
+          color:"#222",font:{size:11,weight:"bold"}
+        }
+      },
+      scales:{
+        y:{min:0,max:120,ticks:{callback:vv=>`${vv}%`,stepSize:20},grid:{color:"#E8ECF2"}},
+        x:{ticks:{maxRotation:90,minRotation:45,font:{size:9}},grid:{display:false}}
+      }
+    }
+  });
+  window._charts.push(ch);
 }
 
 async function descargarActa(){
