@@ -305,7 +305,7 @@ html.dark .it-btn.active{color:var(--azul2)}
 </div>
 
 <div class="nav-tabs">
-  <button class="nav-tab active" onclick="switchTab(event,'tab-dashboard')">📊 Dashboard</button>
+  <button class="nav-tab active" onclick="switchTab(event,'tab-dashboard');_dashRenderLista(_ips_list||[])">📊 Dashboard</button>
   <button class="nav-tab" onclick="switchTab(event,'tab-evaluacion')">⚡ Evaluación</button>
   <button class="nav-tab" onclick="switchTab(event,'tab-actas');cargarActasTab()">📋 Actas <span id="nav-badge-actas" class="nav-badge">0</span></button>
   {% if current_user.rol in ['admin','evaluador'] %}
@@ -366,12 +366,13 @@ html.dark .it-btn.active{color:var(--azul2)}
             <button id="dash-ips-limpiar-btn" onclick="_dashLimpiarIPS()" style="display:none;background:rgba(255,255,255,.15);border:none;cursor:pointer;color:#fff;padding:4px 9px;border-radius:6px;font-size:11px">✕ Cambiar</button>
           </div>
           <!-- Buscador -->
-          <div style="padding:10px 12px 8px;border-bottom:1px solid var(--gris1);background:var(--card-bg)" id="dash-ips-search-wrap">
-            <div style="position:relative">
-              <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--gris3);font-size:13px;pointer-events:none">🔍</span>
-              <input id="dash-buscar-ips" class="form-control" placeholder="Buscar por nombre, NIT o Nº contrato..."
+          <div style="padding:10px 14px 10px;border-bottom:1px solid var(--gris1);background:var(--card-bg)" id="dash-ips-search-wrap">
+            <div style="position:relative;display:flex;align-items:center;background:var(--gris0);border:1.5px solid var(--gris1);border-radius:10px;transition:border-color .15s"
+              onfocusin="this.style.borderColor='var(--azul2)'" onfocusout="this.style.borderColor='var(--gris1)'">
+              <span style="padding:0 10px;color:var(--gris3);font-size:15px;flex-shrink:0">🔍</span>
+              <input id="dash-buscar-ips" placeholder="Buscar por nombre, NIT o Nº contrato..."
                 oninput="_dashBuscarIPS(this.value)" autocomplete="off"
-                style="padding-left:30px;font-size:11.5px;border-color:var(--gris1)">
+                style="flex:1;border:none;background:transparent;outline:none;font-size:12px;padding:9px 12px 9px 0;color:var(--text);font-family:inherit">
             </div>
           </div>
           <!-- Lista de prestadores -->
@@ -3914,53 +3915,66 @@ async function eliminarIPS(id){
 }
 
 function _dashRenderLista(items){
-  const lista=document.getElementById('dash-ips-lista');
-  if(!lista) return;
-  lista.innerHTML='';
-  if(!items||!items.length){
-    lista.innerHTML='<div style="padding:16px;text-align:center;color:var(--gris3);font-size:11.5px">Sin prestadores registrados</div>';
-    return;
-  }
-  const RC={SUBSIDIADO:'#2563EB',CONTRIBUTIVO:'#7c3aed',ESPECIAL:'#0f766e'};
-  items.forEach(function(ip){
-    const nMetas=_contarMetasActivas(ip.metas||{});
-    const activo=!!(S.ips_activa&&S.ips_activa.id===ip.id);
-    const rc=RC[ip.regimen]||'#64748b';
-    const row=document.createElement('div');
-    row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .12s';
-    if(activo) row.style.background='var(--azul4)';
-    row.addEventListener('mouseenter',function(){if(!activo)this.style.background='var(--gris0)';});
-    row.addEventListener('mouseleave',function(){if(!activo)this.style.background='';});
-    row.addEventListener('click',function(){_dashSeleccionarIPS(ip.id);});
-    // Icono
-    const ico=document.createElement('div');
-    ico.style.cssText='width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0';
-    ico.style.background=activo?'#dbeafe':'var(--azul4)';
-    ico.textContent=activo?'✅':'🏥';
-    // Info
-    const info=document.createElement('div');
-    info.style.cssText='flex:1;min-width:0';
-    info.innerHTML='<div style="font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ip.nombre+'</div>'
-      +'<div style="font-size:10px;color:var(--gris3);margin-top:1px">NIT: '+(ip.nit||'—')+' · '+(ip.municipio||'')+'</div>';
-    // Régimen + contrato
-    const meta=document.createElement('div');
-    meta.style.cssText='text-align:right;flex-shrink:0';
-    const chip=document.createElement('div');
-    chip.style.cssText='font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-bottom:3px;display:inline-block';
-    chip.style.background=rc+'22';chip.style.color=rc;
-    chip.textContent=ip.regimen||'—';
-    const cto=document.createElement('div');
-    cto.style.cssText='font-size:9.5px;color:var(--gris3)';
-    cto.innerHTML='Cto: <strong>'+(ip.num_contrato||'—')+'</strong>';
-    meta.appendChild(chip);meta.appendChild(cto);
-    // Contador metas
-    const cnt=document.createElement('div');
-    cnt.style.cssText='text-align:center;flex-shrink:0;width:38px';
-    cnt.innerHTML='<div style="font-size:14px;font-weight:900;color:'+(nMetas>0?'#16a34a':'var(--gris3)')+'">'+nMetas+'</div>'
-      +'<div style="font-size:8.5px;color:var(--gris3);line-height:1.1">act.<br>meta</div>';
-    row.appendChild(ico);row.appendChild(info);row.appendChild(meta);row.appendChild(cnt);
-    lista.appendChild(row);
-  });
+  try{
+    const lista=document.getElementById('dash-ips-lista');
+    if(!lista) return;
+    lista.innerHTML='';
+    if(!items||!items.length){
+      lista.innerHTML='<div style="padding:16px;text-align:center;color:var(--gris3);font-size:11.5px">Sin prestadores registrados</div>';
+      return;
+    }
+    const RC={SUBSIDIADO:'#2563EB',CONTRIBUTIVO:'#7c3aed',ESPECIAL:'#0f766e'};
+    items.forEach(function(ip){
+      try{
+        var nMetas=0;
+        try{nMetas=_contarMetasActivas(ip.metas||{});}catch(e){}
+        var activo=!!(typeof S!=='undefined'&&S.ips_activa&&S.ips_activa.id===ip.id);
+        var rc=RC[ip.regimen]||'#64748b';
+        var row=document.createElement('div');
+        row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .12s';
+        if(activo) row.style.background='var(--azul4)';
+        (function(id,a){
+          row.addEventListener('mouseenter',function(){if(!a)this.style.background='var(--gris0)';});
+          row.addEventListener('mouseleave',function(){if(!a)this.style.background='';});
+          row.addEventListener('click',function(){_dashSeleccionarIPS(id);});
+        })(ip.id,activo);
+        var ico=document.createElement('div');
+        ico.style.cssText='width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0';
+        ico.style.background=activo?'#dbeafe':'var(--azul4)';
+        ico.textContent=activo?'✅':'🏥';
+        var info=document.createElement('div');
+        info.style.cssText='flex:1;min-width:0';
+        var n1=document.createElement('div');
+        n1.style.cssText='font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        n1.textContent=ip.nombre||'—';
+        var n2=document.createElement('div');
+        n2.style.cssText='font-size:10px;color:var(--gris3);margin-top:1px';
+        n2.textContent='NIT: '+(ip.nit||'—')+' · '+(ip.municipio||'');
+        info.appendChild(n1);info.appendChild(n2);
+        var right=document.createElement('div');
+        right.style.cssText='text-align:right;flex-shrink:0';
+        var chip=document.createElement('div');
+        chip.style.cssText='font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:3px;display:inline-block';
+        chip.style.background=rc+'22';chip.style.color=rc;
+        chip.textContent=ip.regimen||'—';
+        var cto=document.createElement('div');
+        cto.style.cssText='font-size:9.5px;color:var(--gris3)';
+        cto.textContent='Cto: '+(ip.num_contrato||'—');
+        right.appendChild(chip);right.appendChild(cto);
+        var cnt=document.createElement('div');
+        cnt.style.cssText='text-align:center;flex-shrink:0;width:40px';
+        var cnum=document.createElement('div');
+        cnum.style.cssText='font-size:15px;font-weight:900;color:'+(nMetas>0?'#16a34a':'#94a3b8');
+        cnum.textContent=nMetas;
+        var clbl=document.createElement('div');
+        clbl.style.cssText='font-size:8.5px;color:var(--gris3);line-height:1.2';
+        clbl.textContent='metas';
+        cnt.appendChild(cnum);cnt.appendChild(clbl);
+        row.appendChild(ico);row.appendChild(info);row.appendChild(right);row.appendChild(cnt);
+        lista.appendChild(row);
+      }catch(e2){}
+    });
+  }catch(e){}
 }
 
 function _dashBuscarIPS(q){
