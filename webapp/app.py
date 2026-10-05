@@ -414,6 +414,23 @@ def debug_db():
         if db:
             cnt = db.execute("SELECT COUNT(*) FROM prestadores").fetchone()[0]
             tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+            # Test INSERT
+            test_id = "debug-test-001"
+            try:
+                db.execute("""INSERT INTO prestadores
+                    (id,nombre,nit,num_contrato,regimen,departamento,municipio,rep_legal,
+                     num_actas,activo,creado_por,vigencia_inicio,vigencia_fin,tipo_contrato,lma,metas)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    ON CONFLICT(id) DO UPDATE SET nombre=excluded.nombre""",
+                    (test_id,"TEST","","","SUBSIDIADO","","","",0,1,"debug","","","ASISTENCIAL","{}","{}"))
+                cnt2 = db.execute("SELECT COUNT(*) FROM prestadores").fetchone()[0]
+                db.execute("DELETE FROM prestadores WHERE id=?", (test_id,))
+                result["insert_test"] = "OK"
+                result["count_after_insert"] = cnt2
+            except Exception as e2:
+                result["insert_test"] = "FAIL"
+                result["insert_error"] = str(e2)
+                result["insert_trace"] = _tb.format_exc()
             db.close()
             result.update({"db_ok": True, "prestadores_count": cnt, "tables": tables})
         else:
