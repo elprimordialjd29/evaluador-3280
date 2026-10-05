@@ -2214,15 +2214,17 @@ async function guardarUsuario(){
 }
 
 async function cargarUsuarios(){
-  const r=await fetch("/api/usuarios");if(!r.ok) return;
-  const d=await r.json();
-  const tbody=document.getElementById("users-tbody");if(!tbody) return;
-  tbody.innerHTML=(d.usuarios||[]).map(u=>`<tr>
-    <td>${u.nombre}</td>
-    <td><code style="font-size:11px;background:var(--gris0);padding:2px 6px;border-radius:4px">${u.username}</code></td>
-    <td><span class="role-badge role-${u.rol}">${u.rol.toUpperCase()}</span></td>
-    <td><span class="pill ${u.activo!==false?'pill-ok':'pill-warn'}">${u.activo!==false?'✓ Activo':'Inactivo'}</span></td>
-  </tr>`).join("")||'<tr><td colspan="4" style="text-align:center;color:var(--gris3);padding:14px">Sin usuarios</td></tr>';
+  try{
+    const r=await fetch("/api/usuarios");if(!r.ok) return;
+    const d=await r.json();
+    const tbody=document.getElementById("users-tbody");if(!tbody) return;
+    tbody.innerHTML=(d.usuarios||[]).map(u=>`<tr>
+      <td>${u.nombre}</td>
+      <td><code style="font-size:11px;background:var(--gris0);padding:2px 6px;border-radius:4px">${u.username}</code></td>
+      <td><span class="role-badge role-${u.rol}">${u.rol.toUpperCase()}</span></td>
+      <td><span class="pill ${u.activo!==false?'pill-ok':'pill-warn'}">${u.activo!==false?'✓ Activo':'Inactivo'}</span></td>
+    </tr>`).join("")||'<tr><td colspan="4" style="text-align:center;color:var(--gris3);padding:14px">Sin usuarios</td></tr>';
+  }catch(e){console.error("cargarUsuarios error:",e);}
 }
 
 function goStep(n){
@@ -5509,13 +5511,15 @@ async function limpiarSesion(){
 }
 
 async function cargarEstado(){
+  try{
   const r=await fetch("/api/estado");const d=await r.json();
-  d.archivos_cargados.forEach(a=>{
+  (d.archivos_cargados||[]).forEach(a=>{
     const lbl=document.getElementById(`lbl-${a}`);
     if(lbl){lbl.style.background="var(--verde3)";lbl.style.borderColor="var(--verde2)";lbl.style.borderStyle="solid";}
     const chk=document.getElementById(`chk-${a}`);
     if(chk){chk.textContent="✓";chk.style.color="var(--verde2)";}
   });
+  }catch(e){console.error("cargarEstado error:",e);}
 }
 
 function leerInfo(){

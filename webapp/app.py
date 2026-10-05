@@ -35,7 +35,8 @@ app.secret_key = os.environ.get("SECRET_KEY", "dusakawi_3280_secret_2026")
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024  # 200 MB
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = False
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_HTTPONLY"] = True
 
 # ── Almacén en memoria ─────────────────────────────────────────────────────
 _sessions = {}
