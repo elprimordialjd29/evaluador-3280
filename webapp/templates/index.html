@@ -5008,7 +5008,7 @@ function agregarFuncionario(){
   sel.value="";
 }
 
-// ── Vista Previa ──────────────────────────────────────
+// ── Vista Previa — idéntica al PDF DR-BC-AP-F-11 ──────────────────────────
 function renderActaPreview(){
   const a=leerActaForm();
   const res=_acta_actual?.resultados||S._resultados||{};
@@ -5020,177 +5020,209 @@ function renderActaPreview(){
     descuento:r.total_descuento||0,
   }));
 
-  const COD="DR-BC-AP-F-11";
   const AZUL="#1a3a6b";
-  const B="border:1px solid #b0b8cc";
+  const BRD="1px solid #aaa";
 
-  // ── Encabezado institucional ─────────────────────────────────────────────
+  // ── Encabezado (idéntico al PDF) ─────────────────────────────────────────
+  // El PDF muestra logo de imagen a la izquierda. Sin imagen, usamos texto institucional.
   const hdr=(pag)=>`
-    <table style="width:100%;border-collapse:collapse;${B}">
+    <table style="width:100%;border-collapse:collapse;border:${BRD};margin-bottom:0;font-family:Arial,sans-serif">
       <tr>
-        <td style="width:110px;padding:8px 12px;border-right:1px solid #b0b8cc;text-align:center;vertical-align:middle">
-          <div style="font-size:13pt;font-weight:900;color:${AZUL};letter-spacing:1px;line-height:1.1">DUSAKAWI</div>
-          <div style="font-size:9pt;font-weight:700;color:${AZUL}">EPSI</div>
+        <td style="width:120px;padding:6px 8px;border-right:${BRD};text-align:center;vertical-align:middle">
+          <div style="font-size:15pt;font-weight:900;color:${AZUL};letter-spacing:1px;line-height:1.05">DUSAKAWI</div>
+          <div style="font-size:9pt;font-weight:900;color:${AZUL};letter-spacing:2px">EPSI</div>
+          <div style="font-size:5pt;color:#555;margin-top:2px;line-height:1.3">ASOCIACIÓN DE CABILDOS INDIGENAS<br>DEL CESAR Y LA GUAJIRA</div>
         </td>
-        <td style="padding:8px 14px;border-right:1px solid #b0b8cc;text-align:center;vertical-align:middle">
-          <div style="font-size:7pt;color:#666;letter-spacing:.5px;margin-bottom:2px">PROCESO: GESTIÓN DEL RIESGO EN SALUD</div>
-          <div style="font-size:13pt;font-weight:900;color:${AZUL};letter-spacing:.5px">ACTA DE EVALUACIÓN DE SERVICIOS</div>
+        <td style="padding:8px 16px;border-right:${BRD};text-align:center;vertical-align:middle">
+          <div style="font-size:7.5pt;color:#444;letter-spacing:.3px">PROCESO: GESTIÓN DEL RIESGO EN SALUD</div>
+          <div style="font-size:15pt;font-weight:900;color:${AZUL};letter-spacing:.3px;margin-top:2px">ACTA DE EVALUACIÓN DE SERVICIOS</div>
         </td>
-        <td style="width:155px;padding:6px 10px;font-size:8pt;color:#222;line-height:1.8;vertical-align:top">
-          <div><b style="color:${AZUL}">CÓDIGO:</b> ${COD}</div>
-          <div><b style="color:${AZUL}">VERSIÓN:</b> 02</div>
-          <div><b style="color:${AZUL}">EMISIÓN:</b> 15/06/2022</div>
-          <div><b style="color:${AZUL}">VIGENCIA:</b> 02/03/2028</div>
-          <div><b style="color:${AZUL}">PÁGINA</b> ${pag}</div>
+        <td style="width:150px;padding:6px 10px;font-size:8pt;color:#111;line-height:2;vertical-align:top">
+          <div>CÓDIGO: DR-BC-AP-F-11</div>
+          <div>VERSIÓN: 02</div>
+          <div>EMISIÓN: 15/06/2022</div>
+          <div>VIGENCIA: 27/12/2028</div>
+          <div>PÁGINA ${pag}</div>
         </td>
       </tr>
     </table>`;
 
-  // ── Info prestador (6 columnas: lbl|val|lbl|val|lbl|val) ────────────────
-  const L=`font-weight:700;color:#fff;background:${AZUL};white-space:nowrap;font-size:7.5pt;padding:4px 7px;${B}`;
-  const V=`color:#111;font-size:8pt;padding:4px 7px;${B}`;
+  // ── Info prestador ────────────────────────────────────────────────────────
+  // PDF: labels en negrita, celdas con bordes finos, sin color de fondo en labels
+  const L=`font-weight:700;font-size:8pt;padding:3px 6px;border:${BRD};white-space:nowrap;background:#f2f2f2`;
+  const V=`font-size:8pt;padding:3px 6px;border:${BRD}`;
   const infoTable=`
     <table style="width:100%;border-collapse:collapse;border-top:none">
       <tr>
-        <td style="${L}">ACTA N°</td>
-        <td style="${V}">${a.acta_num||'—'}</td>
+        <td style="${L}">ACTA Nº</td>
+        <td style="${V}">${a.acta_num||''}</td>
         <td style="${L}">FECHA DE EVALUACIÓN</td>
-        <td style="${V}">${a.fecha_eval||'—'}</td>
-        <td style="${L}">PERÍODO EVALUADO</td>
-        <td style="${V}">${a.periodo_evaluado||'—'}</td>
+        <td style="${V}">${a.fecha_eval||''}</td>
+        <td style="${L}">PERIODO EVALUADO</td>
+        <td style="${V}">${a.periodo_evaluado||''}</td>
       </tr>
       <tr>
-        <td style="${L}">VIGENCIA DEL CONTRATO</td>
-        <td colspan="5" style="${V}">${a.vigencia_contrato||'—'}</td>
+        <td style="${L}">VIGENCIA DEL CONTRATO:</td>
+        <td colspan="3" style="${V}">${a.vigencia_contrato||''}</td>
+        <td style="${L}">EMPRESA</td>
+        <td style="${V}">${a.empresa||''}</td>
       </tr>
       <tr>
-        <td style="${L}">EMPRESA / IPS</td>
-        <td colspan="3" style="${V}">${a.empresa||'—'}</td>
         <td style="${L}">NIT</td>
-        <td style="${V}">${a.nit||'—'}</td>
+        <td style="${V}">${a.nit||''}</td>
+        <td style="${L}">REGIMEN</td>
+        <td style="${V}">${a.regimen||''}</td>
+        <td style="${L}">MUNICIPIO</td>
+        <td style="${V}">${a.municipio||''}</td>
       </tr>
       <tr>
-        <td style="${L}">RÉGIMEN</td>
-        <td style="${V}">${a.regimen||'—'}</td>
-        <td style="${L}">MUNICIPIO</td>
-        <td style="${V}">${a.municipio||'—'}</td>
         <td style="${L}">LUGAR</td>
         <td style="${V}">${a.lugar||'VALLEDUPAR'}</td>
-      </tr>
-      <tr>
-        <td style="${L}">N° CONTRATO</td>
-        <td colspan="5" style="${V}">${a.num_contrato||'—'}</td>
+        <td colspan="2" style="${V}"></td>
+        <td style="${L}">Nº CONTRATO</td>
+        <td style="${V}">${a.num_contrato||''}</td>
       </tr>
     </table>`;
 
-  // ── Bloque de texto ──────────────────────────────────────────────────────
-  const txtBlk=(titulo,texto)=>texto?`
-    <table style="width:100%;border-collapse:collapse;border:1px solid #b0b8cc;border-top:none">
-      <tr><td style="padding:5px 9px;font-size:8pt;color:#111">
-        <b style="color:${AZUL}">${titulo}:</b>&nbsp;${texto}
+  // ── Sección de textos (UNA sola caja, como el PDF) ────────────────────────
+  const txtSection=`
+    <table style="width:100%;border-collapse:collapse;border:${BRD};border-top:none">
+      <tr><td style="padding:5px 8px;font-size:8pt;line-height:1.55">
+        <div><b>PUNTOS A TRATAR:</b><br>${a.puntos_a_tratar||''}</div>
+        <div style="margin-top:4px"><b>OBJETIVO:</b><br>${a.objetivo||''}</div>
+        <div style="margin-top:4px"><b>DESARROLLO Y CONCLUSIONES</b><br>${a.desarrollo_conclusiones||''}</div>
       </td></tr>
-    </table>`:'';
+    </table>`;
 
-  // ── Gráfica de barras ────────────────────────────────────────────────────
-  const barHtml=progData.length?`
-    <div style="border:1px solid #b0b8cc;border-top:none;padding:10px 14px">
-      <div style="font-size:8.5pt;font-weight:700;text-align:center;color:${AZUL};margin-bottom:8px">GRÁFICA 1 — PROMOCIÓN Y MANTENIMIENTO DE LA SALUD</div>
-      <div style="display:flex;align-items:flex-end;gap:3px;height:110px;border-bottom:2px solid #555;padding:0 6px;position:relative">
-        <div style="position:absolute;top:0;left:0;right:0;border-top:1px dashed #ccc;font-size:5.5pt;color:#888;text-align:right;padding-right:4px;padding-top:1px">100%</div>
-        ${progData.map(p=>{
-          const h=Math.min(p.pct*0.90,90);
-          const col=p.pct>=100?"#1a3a6b":p.pct>=70?"#2563EB":"#60a5fa";
-          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:1px">
-            <div style="font-size:6pt;font-weight:700;color:#222">${Math.round(p.pct)}%</div>
-            <div style="width:100%;background:${col};height:${h}px"></div>
-            <div style="font-size:5pt;text-align:center;color:#333;word-break:break-word;max-width:40px;line-height:1.3;margin-top:2px">${p.nombre.replace(/\s+/g,"<br>")}</div>
-          </div>`;}).join("")}
-      </div>
-    </div>`:`<div style="border:1px solid #b0b8cc;border-top:none;text-align:center;padding:18px;color:#999;font-size:8pt;font-style:italic">Sin datos de evaluación cargados</div>`;
-
-  // ── Tabla financiera ─────────────────────────────────────────────────────
+  // ── Gráfica (igual que en el PDF — "PROMOCION Y MANTENIMIENTO DE LA SALUD") ──
   const totExig=progData.reduce((s,p)=>s+p.exigido,0);
   const totRec=progData.reduce((s,p)=>s+p.reconocido,0);
   const totDesc=progData.reduce((s,p)=>s+p.descuento,0);
-  const TC=`padding:4px 8px;border:1px solid #b0b8cc;font-size:8pt`;
+
+  const barHtml=progData.length?`
+    <div style="border:${BRD};border-top:none;padding:10px 12px 6px">
+      <div style="font-size:10pt;font-weight:700;text-align:center;margin-bottom:10px">PROMOCION Y MANTENIMIENTO DE LA SALUD</div>
+      <div style="position:relative;height:160px;border-left:1px solid #555;border-bottom:1px solid #555;margin:0 8px 24px">
+        ${['120%','100%','80%','60%','40%','20%','0%'].map((v,i)=>{
+          const t=i*(160/6);
+          return `<div style="position:absolute;top:${t}px;left:0;right:0;border-top:${i===1?'1px dashed #999':'none'};font-size:6pt;color:#666;left:-28px;width:26px;text-align:right">${v}</div>`;
+        }).join('')}
+        ${progData.map((p,i)=>{
+          const w=100/progData.length;
+          const pct=Math.min(p.pct,120);
+          const h=(pct/120)*160;
+          const x=i*w+w*0.1;
+          const barW=w*0.7;
+          const col=p.pct>=100?"#1a3a6b":p.pct>=70?"#2d6ca2":"#5b9bd5";
+          return `
+            <div style="position:absolute;bottom:0;left:${x}%;width:${barW}%;background:${col};height:${h}px"></div>
+            <div style="position:absolute;bottom:${h+1}px;left:${x}%;width:${barW}%;text-align:center;font-size:6.5pt;font-weight:700">${Math.round(p.pct)}%</div>
+            <div style="position:absolute;bottom:-32px;left:${x-(barW*0.15)}%;width:${barW*1.3}%;text-align:center;font-size:5.5pt;color:#333;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${p.nombre}</div>
+          `;}).join('')}
+      </div>
+    </div>`:`<div style="border:${BRD};border-top:none;padding:14px;text-align:center;color:#999;font-size:8pt;font-style:italic">Sin datos de evaluación cargados</div>`;
+
+  // ── Párrafo post-gráfica ────────────────────────────────────────────────
+  const postBar=a.parrafo_despues_grafico?`
+    <div style="border:${BRD};border-top:none;padding:5px 8px;font-size:8pt;line-height:1.5">${a.parrafo_despues_grafico}</div>`:'';
+
+  // ── Tabla financiera (fondo oscuro en header, filas blancas) ───────────
+  const TC=`padding:3px 6px;border:${BRD};font-size:8pt`;
   const tablaHtml=progData.length?`
     <table style="width:100%;border-collapse:collapse;border-top:none">
       <thead>
-        <tr style="background:${AZUL};color:#fff">
-          <th style="padding:5px 8px;text-align:left;font-size:8pt;font-weight:700;border:1px solid #b0b8cc">PROGRAMA</th>
-          <th style="padding:5px 8px;text-align:right;font-size:8pt;font-weight:700;border:1px solid #b0b8cc;white-space:nowrap">VR EXIGIDO</th>
-          <th style="padding:5px 8px;text-align:right;font-size:8pt;font-weight:700;border:1px solid #b0b8cc;white-space:nowrap">VR RECONOCIDO</th>
-          <th style="padding:5px 8px;text-align:right;font-size:8pt;font-weight:700;border:1px solid #b0b8cc;white-space:nowrap">DESCUENTO</th>
+        <tr style="background:#222;color:#fff">
+          <th style="padding:4px 6px;border:${BRD};text-align:left;font-size:8pt;font-weight:700">Programa</th>
+          <th style="padding:4px 6px;border:${BRD};text-align:right;font-size:8pt;font-weight:700;white-space:nowrap">Vr Exigido</th>
+          <th style="padding:4px 6px;border:${BRD};text-align:right;font-size:8pt;font-weight:700;white-space:nowrap">Vr Reconocido</th>
+          <th style="padding:4px 6px;border:${BRD};text-align:right;font-size:8pt;font-weight:700;white-space:nowrap">Descuento</th>
         </tr>
       </thead>
       <tbody>
-        ${progData.map((p,i)=>`
-        <tr style="background:${i%2?"#f0f4fb":"#fff"}">
-          <td style="${TC};text-align:left">${p.nombre}</td>
+        ${progData.map(p=>`
+        <tr style="background:#fff">
+          <td style="${TC}">${p.nombre}</td>
           <td style="${TC};text-align:right;font-variant-numeric:tabular-nums">${fmt(p.exigido)}</td>
           <td style="${TC};text-align:right;font-variant-numeric:tabular-nums">${fmt(p.reconocido)}</td>
           <td style="${TC};text-align:right;font-variant-numeric:tabular-nums">${fmt(p.descuento)}</td>
-        </tr>`).join("")}
-        <tr style="background:#dde5f2;font-weight:700">
-          <td style="${TC};text-align:left;color:${AZUL}">TOTAL EJECUCION</td>
-          <td style="${TC};text-align:right;font-variant-numeric:tabular-nums;color:${AZUL}">${fmt(totExig)}</td>
-          <td style="${TC};text-align:right;font-variant-numeric:tabular-nums;color:${AZUL}">${fmt(totRec)}</td>
-          <td style="${TC};text-align:right;font-variant-numeric:tabular-nums;color:${AZUL}">${fmt(totDesc)}</td>
-        </tr>
-        <tr style="background:${AZUL};color:#fff;font-weight:700">
-          <td style="${TC}">TOTAL DESCUENTO (No Incluye PAI)</td>
+        </tr>`).join('')}
+        <tr style="font-weight:700">
+          <td style="${TC}">TOTAL EJECUCION</td>
           <td style="${TC};text-align:right;font-variant-numeric:tabular-nums">${fmt(totExig)}</td>
           <td style="${TC};text-align:right;font-variant-numeric:tabular-nums">${fmt(totRec)}</td>
           <td style="${TC};text-align:right;font-variant-numeric:tabular-nums">${fmt(totDesc)}</td>
         </tr>
+        <tr>
+          <td style="${TC}" colspan="3" align="right"><b>TOTAL DESCUENTO (No Incluye PAI)</b></td>
+          <td style="${TC};text-align:right;font-variant-numeric:tabular-nums;font-weight:700">${fmt(totDesc)}</td>
+        </tr>
       </tbody>
-    </table>`:"";
+    </table>`:'';
 
-  // ── Observaciones y NOTA ────────────────────────────────────────────────
-  const obsDefault=`Las Rutas Integrales de Atención en Salud son objeto de seguimiento en términos de calidad, oportunidad, cobertura y resolutividad.\n\nEn tal sentido, se realizará el SEGUIMIENTO Y EVALUACIÓN mensual por parte de DUSAKAWI EPSI y de manera trimestral entre las Partes conjuntamente las respectivas REUNIONES DE GESTIÓN COMPARTIDA. En el evento en que se determine el incumplimiento de una o más metas, el prestador deberá elaborar y presentar ante la EPSI dentro de los cinco (5) días hábiles siguientes un Plan de Mejoramiento que defina acciones y estrategias para lograr el mayor porcentaje de cumplimiento de las metas incumplidas y las sucesivas.`;
-  const notaDefault=`De conformidad con lo establecido en el Decreto 780 de 2016, la Resolución 3280 de 2018, la Resolución 2626 de 2019 y los Anexos Contractuales vigentes, las partes dan por revisada y evaluada la prestación de los servicios de promoción y mantenimiento de la salud para el período señalado en el presente documento.`;
-  const obsText=a.observaciones||obsDefault;
+  // ── Textos exactos del PDF para página 2 ─────────────────────────────────
+  const parrafo2=`En línea con lo anterior la proyección final de descuento es de <b>${fmt(totDesc)}</b> se verifica la ejecución de las actividades de atención primaria, correspondientes a la vigencia antes mencionada, se aclara que se debe cumplir con mínimo el 100% de las actividades programadas para los servicios de promoción y mantenimiento y ruta materno.`;
 
-  // ── Firmas ───────────────────────────────────────────────────────────────
-  const firmaCell=(cargo,nom)=>`
-    <div style="padding:40px 16px 18px;text-align:center;border:1px solid #b0b8cc;margin:-1px 0 0 -1px;background:#fff">
-      <div style="border-top:1.5px solid #444;width:72%;margin:0 auto 12px"></div>
-      <div style="font-size:7pt;font-weight:700;color:${AZUL};text-transform:uppercase;letter-spacing:.3px;line-height:1.4">${cargo}</div>
-      <div style="font-size:9pt;font-weight:700;color:#111;margin-top:4px">${nom||'—'}</div>
-    </div>`;
+  const notaTxt=`Para efectos del cumplimiento de lo establecido por las partes en el contrato suscrito para la vigencia y, en consecuencia de ello el seguimiento al cumplimiento de la Programación de las actividades y procedimientos de PROTECCIÓN ESPECIFICA y DETECCIÓN TEMPRANA, se tendrá en cuenta lo establecido en la normatividad vigente Decreto 780 de 2016, las Resoluciones 3100 de 2019, Resolución 4003 de 2008, Resolución 2626 de 2019, Resolución 3202 de 2016, Resolución 3280 de agosto 2018 y Resolución 3253 de 2009, 202 del 2020, así como lo dispuesto en el ANEXO N° 14 del contrato. <b>"PROCEDIMIENTO SEGUIMIENTO A CONTRATOS"</b>.`;
+
+  const obs1=`En tal sentido, se realizará el SEGUIMIENTO Y EVALUACIÒN mensual por parte de DUSAKAWI EPSI y de manera trimestral entre las Partes conjuntamente las respectivas REUNIONES DE GESTIÓN COMPARTIDA. En el evento en que, de las actividades de seguimiento y evaluación, así como de las reuniones de gestión compartida se determine el incumplimiento de una o mas metas, el prestador de servicios deberá elaborar presentar ante la EPSI dentro de los cinco (5) días hábiles siguientes a la realización de la reunión de gestión compartida un Plan de Mejoramiento que defina acciones y estrategias que le permita lograr el mayor porcentaje de cumplimiento de las metas incumplidas y las sucesivas. Dentro de los siguientes cinco (5) días hábiles siguientes al recibido del Plan de Mejoramiento, la EPSI deberá aprobar o solicitar los ajustes que considere necesario. La ejecución del Plan de Mejoramiento por parte del CONTRATISTA deberá iniciar al día siguiente de aquel en que se haya notificado su aprobación. La evaluación del Plan de mejoramiento se hará de manera sucesiva y tendrá como corte cada trimestre sucesivo hasta la finalización de la vigencia del contrato y de acuerdo a los resultados se podrá solicitar por la EPSI su ajuste.`;
+
+  const obs2=`Los resultados de la evaluación del cumplimiento de metas registrados en el Acta de Gestión Compartida que se suscribirá por cada trimestre que generen proyección de descuento en contra del prestador será registrada contablemente. Si posterior a la evaluación del Plan de Mejoramiento suscrito por el prestador y en todo caso del trimestre inmediatamente siguiente al de aquel en que se han generado proyección de descuentos el prestador de servicios no lograre subir la meta, la suba parcialmente o la cumpla en su totalidad, respectivamente se procederá a: i) materializar el valor proyectado del descuento en contra del prestador; ii) a descontar la diferencia entre el descuento inicialmente proyectado y las metas subidas en el trimestre inmediatamente siguiente al de aquel de donde proviene el registro contable de la proyección de descuentos y; iii) no aplicar y consecuentemente descargar de la contabilidad el descuento proyectado registrado contablemente. Los descuentos a que hubiere lugar se debitaran de los pagos que tenga pendiente de realizarse al prestador.`;
+
+  const obs3=`Lo anterior no impide que durante lo que reste de la vigencia del contrato el prestador pueda alcanzar el cumplimiento de las metas de los meses anteriores, siempre que sea procedente su acumulación, caso en el cual, se procederá a reconocer el valor que corresponda y se registrará contablemente como una nota crédito a favor del prestador, proporcional a las actividades realizadas y que puedan sumar a las metas que se han registrado incumplidas, considerando que la finalidad de la EPSI es lograr que en la medida de lo posible todas las actividades programadas para la población a las que se han dirigido, sean realizadas y consecuentemente recibidas por esta.`;
+
+  const obsCustom=a.observaciones;
+
+  // ── Firmas (idéntico al PDF) ──────────────────────────────────────────────
+  // TOP ROW: nombre bold arriba / CARGO pequeño abajo
+  // BOTTOM ROW: CARGO pequeño arriba / nombre bold abajo
+  const firmaTop=(nom,cargo)=>`
+    <td style="width:50%;padding:8px 16px 14px;border:${BRD};text-align:center;vertical-align:bottom">
+      <div style="height:50px"></div>
+      <div style="border-top:1px solid #333;width:80%;margin:0 auto 6px"></div>
+      <div style="font-size:9pt;font-weight:700;color:#111">${nom||'—'}</div>
+      <div style="font-size:7.5pt;color:#333">${cargo}</div>
+    </td>`;
+  const firmaBot=(cargo,nom)=>`
+    <td style="width:50%;padding:8px 16px 14px;border:${BRD};text-align:center;vertical-align:bottom">
+      <div style="height:50px"></div>
+      <div style="border-top:1px solid #333;width:80%;margin:0 auto 6px"></div>
+      <div style="font-size:7.5pt;color:#333">${cargo}</div>
+      <div style="font-size:9pt;font-weight:700;color:#111">${nom||'—'}</div>
+    </td>`;
 
   const funcs=(a.funcionarios||[]);
-  const funcNom=funcs.length?funcs.join('<br>'):a.evaluador||'—';
+  const funcNom=funcs.length?funcs.join(' / '):a.evaluador||'—';
 
   document.getElementById("acta-preview-doc").innerHTML=`
     ${hdr('1 DE 2')}
     ${infoTable}
-    ${txtBlk('PUNTOS A TRATAR',a.puntos_a_tratar)}
-    ${txtBlk('OBJETIVO',a.objetivo)}
-    ${txtBlk('DESARROLLO Y CONCLUSIONES',a.desarrollo_conclusiones)}
+    ${txtSection}
     ${barHtml}
-    ${a.parrafo_despues_grafico?`<div style="border:1px solid #b0b8cc;border-top:none;padding:6px 9px;font-size:8pt;color:#111">${a.parrafo_despues_grafico}</div>`:''}
+    ${postBar}
     ${tablaHtml}
 
     <!-- ── PÁGINA 2 ─────────────────────────────────── -->
-    <div style="height:32px;border-left:3px solid ${AZUL};background:#f5f8ff;display:flex;align-items:center;padding-left:10px;margin:20px 0 0;font-size:7pt;color:${AZUL};font-weight:700;letter-spacing:.5px">PÁGINA 2 DE 2</div>
+    <div style="margin:28px 0 0;border-top:2px dashed #bbb;padding-top:6px;font-size:6pt;color:#aaa;text-align:center">— PÁGINA 2 DE 2 —</div>
     ${hdr('2 DE 2')}
-    <div style="border:1px solid #b0b8cc;border-top:none;padding:6px 9px;font-size:8pt;color:#111">
-      En línea con lo anterior la proyección final de descuento es de <strong>${fmt(totDesc)}</strong>, se verifica la ejecución de las actividades de promoción y mantenimiento de la salud, en donde se relaciona en el presente periodo evaluado la tabla antes descrita.
+    <div style="border:${BRD};border-top:none;padding:6px 8px;font-size:8pt;line-height:1.5">${parrafo2}</div>
+    <div style="border:${BRD};border-top:none;padding:6px 8px;font-size:8pt;line-height:1.55">
+      <b>OBSERVACIONES:</b><br>
+      <b>NOTA:</b> ${notaTxt}
+      <br><br>${obs1}
+      <br><br>${obs2}
+      <br><br>${obs3}
+      ${obsCustom?`<br><br>${obsCustom}`:''}
     </div>
-    <div style="border:1px solid #b0b8cc;border-top:none;padding:6px 9px;font-size:8pt;color:#111">
-      <b style="color:${AZUL}">OBSERVACIONES:</b><br>
-      <span style="white-space:pre-line;line-height:1.6">${obsText}</span>
-    </div>
-    <div style="border:1px solid #b0b8cc;border-top:none;padding:6px 9px;font-size:7.5pt;color:#333">
-      <b style="color:${AZUL}">NOTA:</b> ${notaDefault}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;margin-top:20px;border:1px solid #b0b8cc">
-      ${firmaCell('REPRESENTANTE LEGAL IPS',a.rep_ips)}
-      ${firmaCell('REPRESENTANTE LEGAL EPSI',a.rep_epsi)}
-      ${firmaCell('COORDINADOR(A) DE BAJA COMPLEJIDAD',a.coordinador)}
-      ${firmaCell('FUNCIONARIO QUIEN REALIZA LA EVALUACIÓN',funcNom)}
-    </div>
+    <table style="width:100%;border-collapse:collapse;margin-top:24px">
+      <tr>
+        ${firmaTop(a.rep_ips,'REPRESENTANTE LEGAL')}
+        ${firmaTop(a.rep_epsi,'REPRESENTANTE LEGAL EPSI')}
+      </tr>
+      <tr>
+        ${firmaBot('COORDINADOR(A) DE BAJA COMPLEJIDAD',a.coordinador)}
+        ${firmaBot('FUNCIONARIO QUIEN REALIZA LA EVALUACIÓN',funcNom)}
+      </tr>
+    </table>
   `;
 }
 
