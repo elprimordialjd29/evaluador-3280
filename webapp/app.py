@@ -18,6 +18,7 @@ from evaluator import RIPSEvaluator
 # ── Config ─────────────────────────────────────────────────────────────────
 BASE_DIR    = Path(__file__).parent
 CONFIG_PATH = BASE_DIR / "config" / "res3280_cups.json"
+_config_cache = None
 
 # Vercel tiene sistema de archivos read-only; usar /tmp para escritura
 _IS_VERCEL = os.environ.get("VERCEL") == "1"
@@ -120,6 +121,9 @@ def _init_db(conn):
         creado_por TEXT,
         created_at TEXT DEFAULT (datetime('now'))
     )""")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_prestadores_nombre ON prestadores(nombre)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_prestadores_activo ON prestadores(activo)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_actas_prestador ON actas(prestador_id)")
     _migrate_db(conn)
 
 # ── Persistencia JSON (fallback cuando no hay SQLite) ───────────────────────
@@ -423,8 +427,11 @@ def api_db_status():
 @app.route("/api/config")
 @login_required
 def api_config():
-    with open(CONFIG_PATH, encoding="utf-8") as f:
-        cfg = json.load(f)
+    global _config_cache
+    if _config_cache is None:
+        with open(CONFIG_PATH, encoding="utf-8") as f:
+            _config_cache = json.load(f)
+    cfg = _config_cache
     return jsonify({"programas": cfg["programas"], "actividades_base": cfg["actividades_base"],
                     "cursos_de_vida": cfg["cursos_de_vida"], "finalidades": cfg.get("finalidades", {}),
                     "rutas_diag": cfg.get("rutas_diag", {})})
@@ -1745,8 +1752,10 @@ def _load_config_mutable():
         return json.load(f)
 
 def _save_config(cfg):
+    global _config_cache
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(cfg, f, ensure_ascii=False, indent=2)
+    _config_cache = cfg
 
 @app.route("/api/config/actividad", methods=["POST"])
 @login_required
