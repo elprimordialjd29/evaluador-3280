@@ -3916,33 +3916,51 @@ async function eliminarIPS(id){
 function _dashRenderLista(items){
   const lista=document.getElementById('dash-ips-lista');
   if(!lista) return;
+  lista.innerHTML='';
   if(!items||!items.length){
     lista.innerHTML='<div style="padding:16px;text-align:center;color:var(--gris3);font-size:11.5px">Sin prestadores registrados</div>';
     return;
   }
-  const regimenColor={SUBSIDIADO:'#2563EB',CONTRIBUTIVO:'#7c3aed',ESPECIAL:'#0f766e'};
-  lista.innerHTML=items.map(ip=>{
+  const RC={SUBSIDIADO:'#2563EB',CONTRIBUTIVO:'#7c3aed',ESPECIAL:'#0f766e'};
+  items.forEach(function(ip){
     const nMetas=_contarMetasActivas(ip.metas||{});
-    const activo=S.ips_activa&&S.ips_activa.id===ip.id;
-    const rc=regimenColor[ip.regimen]||'#64748b';
-    return `<div onclick="_dashSeleccionarIPS('${ip.id}')"
-      style="display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .12s;background:${activo?'var(--azul4)':''};"
-      onmouseover="if(!this.dataset.activo)this.style.background='var(--gris0)'" onmouseout="if(!this.dataset.activo)this.style.background=''" data-activo="${activo?'1':''}">
-      <div style="width:34px;height:34px;border-radius:8px;background:${activo?'#dbeafe':'var(--azul4)'};display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">${activo?'✅':'🏥'}</div>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ip.nombre}</div>
-        <div style="font-size:10px;color:var(--gris3);margin-top:1px">NIT: ${ip.nit||'—'} · ${ip.municipio||''}</div>
-      </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:${rc}20;color:${rc};margin-bottom:3px">${ip.regimen||'—'}</div>
-        <div style="font-size:9.5px;color:var(--gris3)">Cto: <strong>${ip.num_contrato||'—'}</strong></div>
-      </div>
-      <div style="text-align:center;flex-shrink:0;width:38px">
-        <div style="font-size:14px;font-weight:900;color:${nMetas>0?'#16a34a':'var(--gris3)'}">${nMetas}</div>
-        <div style="font-size:8.5px;color:var(--gris3);line-height:1.1">act.<br>meta</div>
-      </div>
-    </div>`;
-  }).join('');
+    const activo=!!(S.ips_activa&&S.ips_activa.id===ip.id);
+    const rc=RC[ip.regimen]||'#64748b';
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .12s';
+    if(activo) row.style.background='var(--azul4)';
+    row.addEventListener('mouseenter',function(){if(!activo)this.style.background='var(--gris0)';});
+    row.addEventListener('mouseleave',function(){if(!activo)this.style.background='';});
+    row.addEventListener('click',function(){_dashSeleccionarIPS(ip.id);});
+    // Icono
+    const ico=document.createElement('div');
+    ico.style.cssText='width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0';
+    ico.style.background=activo?'#dbeafe':'var(--azul4)';
+    ico.textContent=activo?'✅':'🏥';
+    // Info
+    const info=document.createElement('div');
+    info.style.cssText='flex:1;min-width:0';
+    info.innerHTML='<div style="font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+ip.nombre+'</div>'
+      +'<div style="font-size:10px;color:var(--gris3);margin-top:1px">NIT: '+(ip.nit||'—')+' · '+(ip.municipio||'')+'</div>';
+    // Régimen + contrato
+    const meta=document.createElement('div');
+    meta.style.cssText='text-align:right;flex-shrink:0';
+    const chip=document.createElement('div');
+    chip.style.cssText='font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;margin-bottom:3px;display:inline-block';
+    chip.style.background=rc+'22';chip.style.color=rc;
+    chip.textContent=ip.regimen||'—';
+    const cto=document.createElement('div');
+    cto.style.cssText='font-size:9.5px;color:var(--gris3)';
+    cto.innerHTML='Cto: <strong>'+(ip.num_contrato||'—')+'</strong>';
+    meta.appendChild(chip);meta.appendChild(cto);
+    // Contador metas
+    const cnt=document.createElement('div');
+    cnt.style.cssText='text-align:center;flex-shrink:0;width:38px';
+    cnt.innerHTML='<div style="font-size:14px;font-weight:900;color:'+(nMetas>0?'#16a34a':'var(--gris3)')+'">'+nMetas+'</div>'
+      +'<div style="font-size:8.5px;color:var(--gris3);line-height:1.1">act.<br>meta</div>';
+    row.appendChild(ico);row.appendChild(info);row.appendChild(meta);row.appendChild(cnt);
+    lista.appendChild(row);
+  });
 }
 
 function _dashBuscarIPS(q){
