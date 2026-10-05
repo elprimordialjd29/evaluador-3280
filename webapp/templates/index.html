@@ -1581,13 +1581,21 @@ function switchInnerTab(e,id){
 }
 
 async function cargarIPS(){
+  // Si ya hay datos en memoria, mostrarlos de inmediato mientras se refresca en background
+  if(_ips_list.length>0){
+    renderIPS(_ips_list,"ips-list");
+    renderIPS(_ips_list,"ips-list2");
+    const tot=document.getElementById("ds-total-ips");if(tot)tot.textContent=_ips_list.length;
+    const pct=document.getElementById("pl-count-txt");if(pct)pct.textContent=_ips_list.length+' IPS';
+    _dashRenderLista(_ips_list);
+  }
   try{
     const r=await fetch("/api/ips");
     const d=await r.json();
     _ips_list=d.ips||[];
   }catch(e){
     console.error("cargarIPS error:",e);
-    _ips_list=[];
+    if(!_ips_list.length) _ips_list=[];
   }
   renderIPS(_ips_list,"ips-list");
   renderIPS(_ips_list,"ips-list2");
