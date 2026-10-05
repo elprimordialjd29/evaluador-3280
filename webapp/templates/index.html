@@ -2187,8 +2187,8 @@ let _metas_archivo_sub=null;
 let _metas_archivo_cont=null;
 
 function mostrarResumenMetas(metas){
-  const html=Object.entries(metas).map(([p,v])=>`<span style="margin-right:12px"><strong>${p}:</strong> ${v}</span>`).join("");
-  document.getElementById("m-metas-resumen").innerHTML="✅ Metas cargadas: "+html;
+  const items=Object.entries(metas).map(([p,v])=>`<div style="min-width:160px;flex:1 1 160px"><strong>${p}:</strong> ${v}</div>`).join("");
+  document.getElementById("m-metas-resumen").innerHTML=`<div style="font-weight:700;margin-bottom:4px">✅ Metas:</div><div style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:11px">${items}</div>`;
   document.getElementById("m-metas-resumen").style.display="block";
 }
 
