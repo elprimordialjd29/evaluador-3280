@@ -38,22 +38,23 @@ _sessions = {}
 _DB_PATH = Path(os.environ.get("SQLITE_DB", str(BASE_DIR.parent / "data" / "evaluador.db")))
 
 def _get_db():
-    """Retorna conexión SQLite o None si no aplica (Vercel usa JSON fallback)."""
+    """Retorna conexión SQLite en autocommit, o None en Vercel."""
     if _IS_VERCEL:
         return None
     try:
         _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-        conn = sqlite3.connect(str(_DB_PATH))
+        conn = sqlite3.connect(str(_DB_PATH), isolation_level=None)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
         _init_db(conn)
         return conn
-    except Exception:
+    except Exception as e:
+        import traceback; traceback.print_exc()
         return None
 
 def _init_db(conn):
-    conn.executescript("""
-    CREATE TABLE IF NOT EXISTS usuarios (
+    conn.execute("""CREATE TABLE IF NOT EXISTS usuarios (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL,
         username TEXT UNIQUE NOT NULL,
@@ -61,8 +62,8 @@ def _init_db(conn):
         rol TEXT NOT NULL DEFAULT 'evaluador',
         activo INTEGER DEFAULT 1,
         created_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS prestadores (
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS prestadores (
         id TEXT PRIMARY KEY,
         nombre TEXT NOT NULL,
         nit TEXT,
@@ -80,8 +81,8 @@ def _init_db(conn):
         lma TEXT DEFAULT '{}',
         metas TEXT DEFAULT '{}',
         created_at TEXT DEFAULT (datetime('now'))
-    );
-    CREATE TABLE IF NOT EXISTS actas (
+    )""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS actas (
         id TEXT PRIMARY KEY,
         prestador_id TEXT,
         periodo TEXT,
@@ -93,8 +94,7 @@ def _init_db(conn):
         detalle_json TEXT,
         creado_por TEXT,
         created_at TEXT DEFAULT (datetime('now'))
-    );
-    """)
+    )""")
     conn.commit()
 
 # ── Persistencia JSON (fallback cuando no hay SQLite) ───────────────────────
@@ -210,7 +210,8 @@ def _save_ips(ips):
             db.commit()
             db.close()
             return
-        except Exception:
+        except Exception as e:
+            import traceback; traceback.print_exc()
             try: db.close()
             except: pass
     with open(IPS_FILE, "w", encoding="utf-8") as f:
