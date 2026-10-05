@@ -295,7 +295,7 @@ html.dark .it-btn.active{color:var(--azul2)}
   </div>
   <div class="header-actions">
     {% if server_label %}
-    <span style="background:{% if db_ok %}#16a34a{% else %}#dc2626{% endif %};color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;letter-spacing:.3px">🖥️ Servidor · BD {% if db_ok %}activa{% else %}sin conexión{% endif %}</span>
+    <span id="db-status-badge" style="background:#ca8a04;color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;letter-spacing:.3px;transition:background .4s">🖥️ Servidor · BD...</span>
     {% endif %}
     <div class="user-chip">
       <div class="uc-avatar">{{ current_user.nombre[0]|upper }}</div>
@@ -5703,5 +5703,26 @@ function dashIrEvaluacion(){
     </div>
   </div>
 </div>
+<script>
+(function(){
+  const badge = document.getElementById('db-status-badge');
+  if (!badge) return;
+  fetch('/api/db-status')
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        badge.style.background = '#16a34a';
+        badge.textContent = '✅ Servidor · BD activa';
+      } else {
+        badge.style.background = '#dc2626';
+        badge.textContent = '❌ Servidor · BD error';
+      }
+    })
+    .catch(() => {
+      badge.style.background = '#dc2626';
+      badge.textContent = '❌ Servidor · BD error';
+    });
+})();
+</script>
 </body>
 </html>

@@ -376,9 +376,21 @@ def index():
         session.clear()
         return redirect(url_for("login_page"))
     server_label = os.environ.get("SERVER_LABEL", "")
-    db_ok = _get_db() is not None
-    return render_template("index.html", current_user=user,
-                           server_label=server_label, db_ok=db_ok)
+    return render_template("index.html", current_user=user, server_label=server_label)
+
+@app.route("/api/db-status")
+@login_required
+def api_db_status():
+    db = _get_db()
+    if db:
+        try:
+            db.execute("SELECT 1").fetchone()
+            db.close()
+            return jsonify({"ok": True})
+        except Exception:
+            try: db.close()
+            except: pass
+    return jsonify({"ok": False})
 
 @app.route("/api/config")
 @login_required
