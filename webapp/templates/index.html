@@ -1542,9 +1542,8 @@ let _ips_list=[];
 document.addEventListener("DOMContentLoaded",async()=>{
   document.getElementById("fecha_eval").value=hoy();
   document.getElementById("periodo_fin").value=hoy();
-  await cargarConfig();
-  await cargarIPS();
-  await cargarUsuarios();
+  // Ejecutar en paralelo — cargarIPS no depende de config
+  await Promise.all([cargarConfig(), cargarIPS(), cargarUsuarios()]);
   await cargarEstado();
   // Cargar badge de actas en background
   fetch("/api/actas").then(r=>r.json()).then(d=>{
