@@ -5131,7 +5131,7 @@ function renderActaPreview(){
   const tablaHtml=progData.length?`
     <table style="width:100%;border-collapse:collapse;border-top:none">
       <thead>
-        <tr style="background:#222;color:#fff">
+        <tr style="background:${AZUL};color:#fff">
           <th style="padding:4px 6px;border:${BRD};text-align:left;font-size:8pt;font-weight:700">Programa</th>
           <th style="padding:4px 6px;border:${BRD};text-align:right;font-size:8pt;font-weight:700;white-space:nowrap">Vr Exigido</th>
           <th style="padding:4px 6px;border:${BRD};text-align:right;font-size:8pt;font-weight:700;white-space:nowrap">Vr Reconocido</th>
@@ -5172,22 +5172,13 @@ function renderActaPreview(){
 
   const obsCustom=a.observaciones;
 
-  // ── Firmas (idéntico al PDF) ──────────────────────────────────────────────
-  // TOP ROW: nombre bold arriba / CARGO pequeño abajo
-  // BOTTOM ROW: CARGO pequeño arriba / nombre bold abajo
-  const firmaTop=(nom,cargo)=>`
+  // ── Firmas — todas: nombre bold arriba / CARGO pequeño abajo ─────────────
+  const firma=(nom,cargo)=>`
     <td style="width:50%;padding:8px 16px 14px;border:${BRD};text-align:center;vertical-align:bottom">
       <div style="height:50px"></div>
       <div style="border-top:1px solid #333;width:80%;margin:0 auto 6px"></div>
       <div style="font-size:9pt;font-weight:700;color:#111">${nom||'—'}</div>
-      <div style="font-size:7.5pt;color:#333">${cargo}</div>
-    </td>`;
-  const firmaBot=(cargo,nom)=>`
-    <td style="width:50%;padding:8px 16px 14px;border:${BRD};text-align:center;vertical-align:bottom">
-      <div style="height:50px"></div>
-      <div style="border-top:1px solid #333;width:80%;margin:0 auto 6px"></div>
-      <div style="font-size:7.5pt;color:#333">${cargo}</div>
-      <div style="font-size:9pt;font-weight:700;color:#111">${nom||'—'}</div>
+      <div style="font-size:7.5pt;color:#444;margin-top:2px">${cargo}</div>
     </td>`;
 
   const funcs=(a.funcionarios||[]);
@@ -5215,12 +5206,12 @@ function renderActaPreview(){
     </div>
     <table style="width:100%;border-collapse:collapse;margin-top:24px">
       <tr>
-        ${firmaTop(a.rep_ips,'REPRESENTANTE LEGAL')}
-        ${firmaTop(a.rep_epsi,'REPRESENTANTE LEGAL EPSI')}
+        ${firma(a.rep_ips,'REPRESENTANTE LEGAL IPS')}
+        ${firma(a.rep_epsi,'REPRESENTANTE LEGAL EPSI')}
       </tr>
       <tr>
-        ${firmaBot('COORDINADOR(A) DE BAJA COMPLEJIDAD',a.coordinador)}
-        ${firmaBot('FUNCIONARIO QUIEN REALIZA LA EVALUACIÓN',funcNom)}
+        ${firma(a.coordinador,'COORDINADOR(A) DE BAJA COMPLEJIDAD')}
+        ${firma(funcNom,'FUNCIONARIO QUIEN REALIZA LA EVALUACIÓN')}
       </tr>
     </table>
   `;
