@@ -436,9 +436,11 @@ def api_config():
         with open(CONFIG_PATH, encoding="utf-8") as f:
             _config_cache = json.load(f)
     cfg = _config_cache
-    return jsonify({"programas": cfg["programas"], "actividades_base": cfg["actividades_base"],
+    resp = jsonify({"programas": cfg["programas"], "actividades_base": cfg["actividades_base"],
                     "cursos_de_vida": cfg["cursos_de_vida"], "finalidades": cfg.get("finalidades", {}),
                     "rutas_diag": cfg.get("rutas_diag", {})})
+    resp.headers["Cache-Control"] = "private, max-age=300"
+    return resp
 
 # ══════════════════════════════════════════════════════════════════════════
 @app.route("/api/debug-db")
@@ -482,7 +484,9 @@ def debug_db():
 @app.route("/api/ips", methods=["GET"])
 @login_required
 def get_ips():
-    return jsonify({"ips": _load_ips()})
+    resp = jsonify({"ips": _load_ips()})
+    resp.headers["Cache-Control"] = "private, max-age=30"
+    return resp
 
 @app.route("/api/ips", methods=["POST"])
 @login_required
@@ -1840,6 +1844,20 @@ def limpiar():
     sd.clear()
     sd.update({"archivos":{}, "metas":{}, "info_acta":{}, "resultados": None})
     return jsonify({"ok": True})
+
+# Pre-inicializar DB en el proceso master (con --preload, los workers
+# heredan _db_ready=True y nunca corren _init_db, eliminando el delay inicial)
+if not _IS_VERCEL:
+    try:
+        _pre = sqlite3.connect(str(_DB_PATH), isolation_level=None, timeout=30)
+        _pre.row_factory = sqlite3.Row
+        _pre.execute("PRAGMA journal_mode=WAL")
+        _pre.execute("PRAGMA foreign_keys=ON")
+        _init_db(_pre)
+        _pre.close()
+        _db_ready = True
+    except Exception:
+        pass
 
 if __name__ == "__main__":
     print("\n🚀 Evaluador Res. 3280 v0.1 – DUSAKAWI EPSI")
