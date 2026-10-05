@@ -73,6 +73,7 @@ def _migrate_db(conn):
         ("lma",             "TEXT DEFAULT '{}'"),
         ("metas",           "TEXT DEFAULT '{}'"),
         ("creado_por",      "TEXT DEFAULT ''"),
+        ("created_at",      "TEXT DEFAULT (datetime('now'))"),
     ]:
         if col not in cols:
             conn.execute(f"ALTER TABLE prestadores ADD COLUMN {col} {defn}")
