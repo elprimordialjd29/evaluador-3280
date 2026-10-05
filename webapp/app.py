@@ -2,9 +2,9 @@
 """
 Evaluador Res. 3280 – DUSAKAWI EPSI  v0.5.0
 Servidor Flask con autenticación, roles y gestión de prestadores
-Persistencia: Supabase (con fallback a JSON local)
+Persistencia: SQLite local (en servidor Contabo) con fallback JSON
 """
-import json, os, datetime, uuid, hashlib
+import json, os, datetime, uuid, hashlib, sqlite3
 from pathlib import Path
 from functools import wraps
 from flask import (Flask, request, jsonify, render_template, send_file,
@@ -33,22 +33,69 @@ app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024  # 200 MB
 # ── Almacén en memoria ─────────────────────────────────────────────────────
 _sessions = {}
 
-# ── Supabase ────────────────────────────────────────────────────────────────
-SUPA_URL = os.environ.get("SUPABASE_URL", "")
-SUPA_KEY = os.environ.get("SUPABASE_KEY", "")
+# ── SQLite ──────────────────────────────────────────────────────────────────
+# Ruta de la base de datos: variable de entorno o carpeta data/ junto al app
+_DB_PATH = Path(os.environ.get("SQLITE_DB", str(BASE_DIR.parent / "data" / "evaluador.db")))
 
-_sb = None
-def _get_sb():
-    global _sb
-    if _sb is None:
-        try:
-            from supabase import create_client
-            _sb = create_client(SUPA_URL, SUPA_KEY)
-        except Exception:
-            pass
-    return _sb
+def _get_db():
+    """Retorna conexión SQLite o None si no se puede abrir."""
+    try:
+        _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        conn = sqlite3.connect(str(_DB_PATH))
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        _init_db(conn)
+        return conn
+    except Exception:
+        return None
 
-# ── Persistencia JSON (fallback local) ──────────────────────────────────────
+def _init_db(conn):
+    conn.executescript("""
+    CREATE TABLE IF NOT EXISTS usuarios (
+        id TEXT PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        username TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        rol TEXT NOT NULL DEFAULT 'evaluador',
+        activo INTEGER DEFAULT 1,
+        created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS prestadores (
+        id TEXT PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        nit TEXT,
+        num_contrato TEXT,
+        regimen TEXT,
+        departamento TEXT,
+        municipio TEXT,
+        rep_legal TEXT,
+        num_actas INTEGER DEFAULT 0,
+        activo INTEGER DEFAULT 1,
+        creado_por TEXT,
+        vigencia_inicio TEXT,
+        vigencia_fin TEXT,
+        tipo_contrato TEXT DEFAULT 'ASISTENCIAL',
+        lma TEXT DEFAULT '{}',
+        metas TEXT DEFAULT '{}',
+        created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS actas (
+        id TEXT PRIMARY KEY,
+        prestador_id TEXT,
+        periodo TEXT,
+        fecha TEXT,
+        total_exigido REAL DEFAULT 0,
+        total_reconocido REAL DEFAULT 0,
+        total_descuento REAL DEFAULT 0,
+        pct_cumplimiento REAL DEFAULT 0,
+        detalle_json TEXT,
+        creado_por TEXT,
+        created_at TEXT DEFAULT (datetime('now'))
+    );
+    """)
+    conn.commit()
+
+# ── Persistencia JSON (fallback cuando no hay SQLite) ───────────────────────
 USERS_FILE  = DATA_PATH / "users.json"
 IPS_FILE    = DATA_PATH / "ips.json"
 ACTAS_FILE  = DATA_PATH / "actas.json"
@@ -56,17 +103,18 @@ ACTAS_FILE  = DATA_PATH / "actas.json"
 def _hash(pwd): return hashlib.sha256(pwd.encode()).hexdigest()
 
 def _load_users():
-    sb = _get_sb()
-    if sb:
+    db = _get_db()
+    if db:
         try:
-            rows = sb.table("usuarios").select("*").execute().data
+            rows = db.execute("SELECT * FROM usuarios ORDER BY created_at").fetchall()
+            db.close()
             if rows:
                 return [{"id": r["id"], "nombre": r["nombre"], "username": r["username"],
-                         "password": r["password_hash"], "rol": r["rol"], "activo": r["activo"]}
-                        for r in rows]
+                         "password": r["password_hash"], "rol": r["rol"],
+                         "activo": bool(r["activo"])} for r in rows]
         except Exception:
-            pass
-    # Fallback JSON
+            try: db.close()
+            except: pass
     if USERS_FILE.exists():
         with open(USERS_FILE, encoding="utf-8") as f:
             return json.load(f)
@@ -80,122 +128,146 @@ def _load_users():
     return default
 
 def _save_users(users):
-    sb = _get_sb()
-    sb_ok = False
-    if sb:
+    db = _get_db()
+    if db:
         try:
             for u in users:
-                sb.table("usuarios").upsert({
-                    "id": u["id"], "nombre": u["nombre"], "username": u["username"],
-                    "password_hash": u["password"], "rol": u["rol"], "activo": u.get("activo", True)
-                }, on_conflict="username").execute()
-            sb_ok = True
+                db.execute("""INSERT INTO usuarios (id,nombre,username,password_hash,rol,activo)
+                    VALUES (?,?,?,?,?,?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        nombre=excluded.nombre, username=excluded.username,
+                        password_hash=excluded.password_hash, rol=excluded.rol,
+                        activo=excluded.activo""",
+                    (u["id"], u["nombre"], u["username"], u["password"],
+                     u["rol"], 1 if u.get("activo", True) else 0))
+            db.commit()
+            db.close()
+            return
         except Exception:
-            pass
-    if not sb_ok:
-        with open(USERS_FILE, "w", encoding="utf-8") as f:
-            json.dump(users, f, ensure_ascii=False, indent=2)
+            try: db.close()
+            except: pass
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
 
 def _load_ips():
-    sb = _get_sb()
-    if sb:
+    db = _get_db()
+    if db:
         try:
-            rows = sb.table("prestadores").select("*").order("creado_en").execute().data
+            rows = db.execute("SELECT * FROM prestadores ORDER BY created_at").fetchall()
+            db.close()
             if rows is not None:
                 result = []
                 for r in rows:
-                    # Preferir metas guardadas en columna JSON de prestadores;
-                    # si están vacías, intentar desde la tabla metas separada
-                    metas_inline = r.get("metas") or {}
-                    if not metas_inline:
-                        metas_inline = _cargar_metas_supabase(r["id"])
+                    metas = json.loads(r["metas"] or "{}")
+                    lma   = json.loads(r["lma"] or "{}")
                     result.append({
-                        "id": r["id"], "nombre": r["nombre"], "nit": r.get("nit",""),
-                        "num_contrato": r.get("num_contrato",""), "regimen": r.get("regimen",""),
-                        "departamento": r.get("departamento",""), "municipio": r.get("municipio",""),
-                        "rep_legal": r.get("rep_legal",""), "num_actas": r.get("num_actas", 0),
-                        "activo": r.get("activo", True), "creado_por": r.get("creado_por",""),
-                        "vigencia_inicio": r.get("vigencia_inicio",""),
-                        "vigencia_fin": r.get("vigencia_fin",""),
-                        "tipo_contrato": r.get("tipo_contrato","ASISTENCIAL"),
-                        "lma": r.get("lma", {}),
-                        "metas": metas_inline,
+                        "id": r["id"], "nombre": r["nombre"], "nit": r["nit"] or "",
+                        "num_contrato": r["num_contrato"] or "", "regimen": r["regimen"] or "",
+                        "departamento": r["departamento"] or "", "municipio": r["municipio"] or "",
+                        "rep_legal": r["rep_legal"] or "", "num_actas": r["num_actas"] or 0,
+                        "activo": bool(r["activo"]), "creado_por": r["creado_por"] or "",
+                        "vigencia_inicio": r["vigencia_inicio"] or "",
+                        "vigencia_fin": r["vigencia_fin"] or "",
+                        "tipo_contrato": r["tipo_contrato"] or "ASISTENCIAL",
+                        "lma": lma, "metas": metas,
                     })
                 return result
         except Exception:
-            pass
+            try: db.close()
+            except: pass
     if IPS_FILE.exists():
         with open(IPS_FILE, encoding="utf-8") as f:
             return json.load(f)
     return []
 
 def _save_ips(ips):
-    sb = _get_sb()
-    sb_ok = False
-    if sb:
+    db = _get_db()
+    if db:
         try:
             for p in ips:
-                sb.table("prestadores").upsert({
-                    "id": p["id"], "nombre": p["nombre"], "nit": p.get("nit",""),
-                    "num_contrato": p.get("num_contrato",""), "regimen": p.get("regimen",""),
-                    "departamento": p.get("departamento",""), "municipio": p.get("municipio",""),
-                    "rep_legal": p.get("rep_legal",""), "num_actas": p.get("num_actas", 0),
-                    "activo": p.get("activo", True), "creado_por": p.get("creado_por",""),
-                    "vigencia_inicio": p.get("vigencia_inicio",""),
-                    "vigencia_fin": p.get("vigencia_fin",""),
-                    "tipo_contrato": p.get("tipo_contrato","ASISTENCIAL"),
-                    "lma": p.get("lma", {}), "metas": p.get("metas", {}),
-                }, on_conflict="id").execute()
-            sb_ok = True
+                db.execute("""INSERT INTO prestadores
+                    (id,nombre,nit,num_contrato,regimen,departamento,municipio,rep_legal,
+                     num_actas,activo,creado_por,vigencia_inicio,vigencia_fin,tipo_contrato,lma,metas)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        nombre=excluded.nombre, nit=excluded.nit,
+                        num_contrato=excluded.num_contrato, regimen=excluded.regimen,
+                        departamento=excluded.departamento, municipio=excluded.municipio,
+                        rep_legal=excluded.rep_legal, num_actas=excluded.num_actas,
+                        activo=excluded.activo, creado_por=excluded.creado_por,
+                        vigencia_inicio=excluded.vigencia_inicio, vigencia_fin=excluded.vigencia_fin,
+                        tipo_contrato=excluded.tipo_contrato, lma=excluded.lma, metas=excluded.metas""",
+                    (p["id"], p["nombre"], p.get("nit",""), p.get("num_contrato",""),
+                     p.get("regimen",""), p.get("departamento",""), p.get("municipio",""),
+                     p.get("rep_legal",""), p.get("num_actas",0),
+                     1 if p.get("activo", True) else 0, p.get("creado_por",""),
+                     p.get("vigencia_inicio",""), p.get("vigencia_fin",""),
+                     p.get("tipo_contrato","ASISTENCIAL"),
+                     json.dumps(p.get("lma",{}), ensure_ascii=False),
+                     json.dumps(p.get("metas",{}), ensure_ascii=False)))
+            db.commit()
+            db.close()
+            return
         except Exception:
-            pass
-    if not sb_ok:
-        with open(IPS_FILE, "w", encoding="utf-8") as f:
-            json.dump(ips, f, ensure_ascii=False, indent=2)
+            try: db.close()
+            except: pass
+    with open(IPS_FILE, "w", encoding="utf-8") as f:
+        json.dump(ips, f, ensure_ascii=False, indent=2)
 
 def _load_actas():
-    sb = _get_sb()
-    if sb:
+    db = _get_db()
+    if db:
         try:
-            rows = sb.table("evaluaciones").select("*").order("creado_en", desc=True).execute().data
+            rows = db.execute("SELECT * FROM actas ORDER BY created_at DESC").fetchall()
+            db.close()
             if rows is not None:
                 return [{
-                    "id": r["id"], "prestador_id": r.get("prestador_id"),
-                    "periodo": r.get("periodo",""), "fecha": str(r.get("fecha","")),
-                    "total_exigido": float(r.get("total_exigido",0)),
-                    "total_reconocido": float(r.get("total_reconocido",0)),
-                    "total_descuento": float(r.get("total_descuento",0)),
-                    "pct": float(r.get("pct_cumplimiento",0)),
-                    "detalle": r.get("detalle_json"), "creado_por": r.get("creado_por","")
+                    "id": r["id"], "prestador_id": r["prestador_id"],
+                    "periodo": r["periodo"] or "", "fecha": r["fecha"] or "",
+                    "total_exigido": float(r["total_exigido"] or 0),
+                    "total_reconocido": float(r["total_reconocido"] or 0),
+                    "total_descuento": float(r["total_descuento"] or 0),
+                    "pct": float(r["pct_cumplimiento"] or 0),
+                    "detalle": json.loads(r["detalle_json"] or "null"),
+                    "creado_por": r["creado_por"] or ""
                 } for r in rows]
         except Exception:
-            pass
+            try: db.close()
+            except: pass
     if ACTAS_FILE.exists():
         with open(ACTAS_FILE, encoding="utf-8") as f:
             return json.load(f)
     return []
 
 def _save_actas(actas):
-    sb = _get_sb()
-    sb_ok = False
-    if sb:
+    db = _get_db()
+    if db:
         try:
             for a in actas:
-                sb.table("evaluaciones").upsert({
-                    "id": a["id"], "prestador_id": a.get("prestador_id"),
-                    "periodo": a.get("periodo",""), "fecha": a.get("fecha"),
-                    "total_exigido": a.get("total_exigido",0),
-                    "total_reconocido": a.get("total_reconocido",0),
-                    "total_descuento": a.get("total_descuento",0),
-                    "pct_cumplimiento": a.get("pct",0),
-                    "detalle_json": a.get("detalle"), "creado_por": a.get("creado_por","")
-                }, on_conflict="id").execute()
-            sb_ok = True
+                db.execute("""INSERT INTO actas
+                    (id,prestador_id,periodo,fecha,total_exigido,total_reconocido,
+                     total_descuento,pct_cumplimiento,detalle_json,creado_por)
+                    VALUES (?,?,?,?,?,?,?,?,?,?)
+                    ON CONFLICT(id) DO UPDATE SET
+                        prestador_id=excluded.prestador_id, periodo=excluded.periodo,
+                        fecha=excluded.fecha, total_exigido=excluded.total_exigido,
+                        total_reconocido=excluded.total_reconocido,
+                        total_descuento=excluded.total_descuento,
+                        pct_cumplimiento=excluded.pct_cumplimiento,
+                        detalle_json=excluded.detalle_json, creado_por=excluded.creado_por""",
+                    (a["id"], a.get("prestador_id"), a.get("periodo",""), a.get("fecha",""),
+                     a.get("total_exigido",0), a.get("total_reconocido",0),
+                     a.get("total_descuento",0), a.get("pct",0),
+                     json.dumps(a.get("detalle"), ensure_ascii=False),
+                     a.get("creado_por","")))
+            db.commit()
+            db.close()
+            return
         except Exception:
-            pass
-    if not sb_ok:
-        with open(ACTAS_FILE, "w", encoding="utf-8") as f:
-            json.dump(actas, f, ensure_ascii=False, indent=2)
+            try: db.close()
+            except: pass
+    with open(ACTAS_FILE, "w", encoding="utf-8") as f:
+        json.dump(actas, f, ensure_ascii=False, indent=2)
 
 def _extraer_meta_val(valor) -> float:
     """Extrae el valor numérico de meta desde un dict {meta, upc} o un número."""
@@ -207,46 +279,12 @@ def _extraer_meta_val(valor) -> float:
         return 0.0
 
 def _guardar_metas_supabase(prestador_id: str, metas: dict):
-    """Guarda metas en tabla metas de Supabase (upsert por prestador+programa+actividad)."""
-    sb = _get_sb()
-    if not sb: return
-    try:
-        sb.table("metas").delete().eq("prestador_id", prestador_id).execute()
-        rows = []
-        for prog_id, acts in metas.items():
-            if not isinstance(acts, dict): continue
-            for act_id, valor in acts.items():
-                meta_val = _extraer_meta_val(valor)
-                if meta_val <= 0:
-                    continue  # no guardar filas en cero
-                rows.append({
-                    "id": str(uuid.uuid4()),
-                    "prestador_id": prestador_id,
-                    "programa_id": prog_id,
-                    "actividad_id": act_id,
-                    "meta_upc": meta_val,
-                    "activo": True
-                })
-        if rows:
-            sb.table("metas").insert(rows).execute()
-    except Exception as e:
-        import traceback; traceback.print_exc()
+    """Stub de compatibilidad — metas se guardan inline en prestadores SQLite."""
+    pass
 
 def _cargar_metas_supabase(prestador_id: str) -> dict:
-    """Carga metas desde Supabase para un prestador. Retorna {prog: {act: {meta: N}}}."""
-    sb = _get_sb()
-    if not sb: return {}
-    try:
-        rows = sb.table("metas").select("*").eq("prestador_id", prestador_id).eq("activo", True).execute().data
-        metas: dict = {}
-        for r in rows:
-            prog = r["programa_id"]
-            act  = r["actividad_id"]
-            val  = float(r.get("meta_upc", 0) or 0)
-            metas.setdefault(prog, {})[act] = {"meta": val, "upc": 0}
-        return metas
-    except Exception:
-        return {}
+    """Stub de compatibilidad — metas se leen inline desde prestadores SQLite."""
+    return {}
 
 # ── Auth helpers ───────────────────────────────────────────────────────────
 class SimpleUser:
@@ -332,7 +370,10 @@ def logout():
 @login_required
 def index():
     user = _get_current_user()
-    return render_template("index.html", current_user=user)
+    server_label = os.environ.get("SERVER_LABEL", "")
+    db_ok = _get_db() is not None
+    return render_template("index.html", current_user=user,
+                           server_label=server_label, db_ok=db_ok)
 
 @app.route("/api/config")
 @login_required

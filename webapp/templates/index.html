@@ -294,6 +294,9 @@ html.dark .it-btn.active{color:var(--azul2)}
     </div>
   </div>
   <div class="header-actions">
+    {% if server_label %}
+    <span title="Base de datos: {{ 'SQLite ✓' if db_ok else 'sin conexión' }}" style="background:{% if db_ok %}#16a34a{% else %}#dc2626{% endif %};color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;letter-spacing:.3px">🖥️ {{ server_label }}</span>
+    {% endif %}
     <div class="user-chip">
       <div class="uc-avatar">{{ current_user.nombre[0]|upper }}</div>
       <span class="uc-name">{{ current_user.nombre }}</span>
