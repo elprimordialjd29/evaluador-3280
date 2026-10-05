@@ -11,7 +11,7 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --azul:#1E3A8A;--azul2:#2563EB;--azul3:#BFDBFE;--azul4:#EFF6FF;
+  --azul:#4338CA;--azul2:#4F46E5;--azul3:#C7D2FE;--azul4:#EEF2FF;
   --verde:#065F46;--verde2:#059669;--verde3:#D1FAE5;
   --amarillo:#B45309;--amarillo2:#FEF3C7;
   --rojo:#B91C1C;--rojo2:#FEE2E2;
@@ -25,7 +25,7 @@
   --header-h:62px;
   --scroll-bg:#EEF2F7;--scroll-thumb:#CBD5E1;--scroll-thumb-hover:#94A3B8;
   /* gradient palette */
-  --grad-blue:linear-gradient(135deg,#1E3A8A 0%,#2563EB 100%);
+  --grad-blue:linear-gradient(135deg,#4338CA 0%,#4F46E5 100%);
   --grad-green:linear-gradient(135deg,#065F46 0%,#059669 100%);
   --grad-indigo:linear-gradient(135deg,#3730A3 0%,#6366F1 100%);
   --grad-teal:linear-gradient(135deg,#0F766E 0%,#14B8A6 100%);
@@ -72,8 +72,16 @@ body{font-family:'Inter',sans-serif;background:var(--body-bg);color:var(--text);
 .icon-btn{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:.15s;color:#fff}
 .icon-btn:hover{background:rgba(255,255,255,.28)}
 .btn-hdr{padding:7px 16px;border-radius:9px;border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px}
-.btn-hdr-primary{background:#fff;color:#1E3A8A;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.btn-hdr-primary{background:#fff;color:#4338CA;box-shadow:0 2px 8px rgba(0,0,0,.2)}
 .btn-hdr-primary:hover{background:rgba(255,255,255,.92);box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.btn-hdr-restaurar{background:transparent;color:#fff;border:1.5px solid rgba(251,191,36,.7);padding:6px 14px}
+.btn-hdr-restaurar:hover{background:rgba(251,191,36,.15);border-color:#FCD34D}
+.btn-hdr-sync{background:#fff;color:#4338CA;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.btn-hdr-sync:hover{background:rgba(255,255,255,.92)}
+.server-badge-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.25);color:#fff;font-size:11px;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.18);cursor:default;white-space:nowrap}
+.server-badge-pill .dot{width:8px;height:8px;border-radius:50%;background:#22C55E;box-shadow:0 0 6px #22C55E;flex-shrink:0}
+.server-badge-pill.error .dot{background:#EF4444;box-shadow:0 0 6px #EF4444}
+.server-badge-pill.loading .dot{background:#EAB308;box-shadow:0 0 6px #EAB308}
 /* ── NAV TABS ───────────────────────────────── */
 .nav-tabs{background:var(--card-bg);border-bottom:1.5px solid var(--gris1);padding:0 24px;display:flex;gap:2px;transition:background .25s;box-shadow:0 1px 0 var(--gris1)}
 .nav-tab{padding:12px 18px;font-size:12.5px;font-weight:600;color:var(--gris3);border-bottom:2.5px solid transparent;margin-bottom:-1.5px;cursor:pointer;display:flex;align-items:center;gap:7px;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:.15s;white-space:nowrap;letter-spacing:.1px}
@@ -158,9 +166,9 @@ body{font-family:'Inter',sans-serif;background:var(--body-bg);color:var(--text);
 .form-control:focus{border-color:var(--azul2);box-shadow:0 0 0 3px rgba(46,117,182,.1)}
 textarea.form-control{resize:vertical;min-height:56px}
 .inner-tabs{display:flex;gap:0;border-bottom:2px solid var(--gris1);margin-bottom:14px}
-.it-btn{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;color:var(--gris3);background:none;border-top:none;border-left:none;border-right:none;font-family:inherit;transition:.15s}
-.it-btn:hover{color:var(--azul2)}
-.it-btn.active{color:var(--azul2);border-bottom-color:var(--azul2)}
+.it-btn{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;border-radius:8px;color:var(--gris3);background:none;font-family:inherit;transition:.15s;margin:4px 2px}
+.it-btn:hover{color:var(--azul2);background:var(--azul4)}
+.it-btn.active{color:#fff;background:var(--azul2);box-shadow:0 2px 8px rgba(79,70,229,.35)}
 .it-pane{display:none}
 .it-pane.active{display:block}
 .meta-wrap{max-height:360px;overflow-y:auto;border:1px solid var(--gris1);border-radius:8px}
@@ -294,7 +302,11 @@ html.dark .it-btn.active{color:var(--azul2)}
     </div>
   </div>
   <div class="header-actions">
-    <span id="db-status-badge" style="background:#ca8a04;color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;letter-spacing:.3px;transition:background .4s">🟡 🖥️ Servidor · BD...</span>
+    <button class="btn-hdr btn-hdr-restaurar" onclick="restaurarBackup()" title="Exportar backup JSON">🗄️ Restaurar</button>
+    <span id="db-status-badge" class="server-badge-pill loading" title="Estado de la base de datos">
+      <span class="dot"></span><span id="db-status-text">Servidor · BD...</span>
+    </span>
+    <button class="btn-hdr btn-hdr-sync" onclick="sincronizarDatos()" title="Sincronizar datos del servidor">⇄ Sincronizar</button>
     <div class="user-chip">
       <div class="uc-avatar">{{ current_user.nombre[0]|upper }}</div>
       <span class="uc-name">{{ current_user.nombre }}</span>
@@ -845,14 +857,15 @@ html.dark .it-btn.active{color:var(--azul2)}
 <div style="display:flex;flex-direction:column;height:calc(100vh - 113px);overflow:hidden;width:100%">
 
   <!-- Sub-nav -->
-  <div style="background:#fff;border-bottom:1.5px solid var(--gris1);padding:0 22px;display:flex;gap:2px;flex-shrink:0">
-    <button class="it-btn active" style="padding:10px 15px;font-size:12px" onclick="switchMantTab(event,'mant-prestadores')">🏥 Prestadores</button>
-    <button class="it-btn" style="padding:10px 15px;font-size:12px" onclick="switchMantTab(event,'mant-cups')">📋 CUPS Personalizados</button>
-    <button class="it-btn" style="padding:10px 15px;font-size:12px" onclick="switchMantTab(event,'mant-tipos')">🔬 Tipos de Servicio</button>
+  <div style="background:#fff;border-bottom:1.5px solid var(--gris1);padding:4px 18px;display:flex;gap:2px;flex-shrink:0;align-items:center">
+    <button class="it-btn active" onclick="switchMantTab(event,'mant-prestadores')">🏥 Prestadores</button>
+    <button class="it-btn" onclick="switchMantTab(event,'mant-cups')">📋 CUPS Personalizados</button>
+    <button class="it-btn" onclick="switchMantTab(event,'mant-tipos')">🔬 Tipos de Servicio</button>
     {% if current_user.rol == 'admin' %}
-    <button class="it-btn" style="padding:10px 15px;font-size:12px" onclick="switchMantTab(event,'mant-usuarios')">👥 Usuarios</button>
-    <button class="it-btn" style="padding:10px 15px;font-size:12px" onclick="switchMantTab(event,'mant-drive');checkDriveStatus()">☁️ Drive</button>
+    <button class="it-btn" onclick="switchMantTab(event,'mant-usuarios')">👥 Usuarios</button>
+    <button class="it-btn" onclick="switchMantTab(event,'mant-drive');checkDriveStatus()">☁️ Drive</button>
     {% endif %}
+    <button class="it-btn" onclick="switchMantTab(event,'mant-monitor');iniciarMonitor()">📊 Monitor</button>
   </div>
 
   <!-- ── PRESTADORES ── -->
@@ -1086,6 +1099,129 @@ html.dark .it-btn.active{color:var(--azul2)}
     </div>
   </div>
   {% endif %}
+
+  <!-- ── MONITOR ── -->
+  <div id="mant-monitor" class="mant-pane" style="display:none;flex:1;overflow-y:auto;padding:18px 22px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:10px;height:10px;border-radius:50%;background:#22C55E;box-shadow:0 0 8px #22C55E" id="monitor-dot"></div>
+        <span style="font-size:16px;font-weight:800;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif">Monitor de Recursos</span>
+        <span style="font-size:11px;color:#22C55E;font-weight:600;background:#F0FDF4;border:1px solid #BBF7D0;padding:2px 8px;border-radius:10px">EN VIVO</span>
+      </div>
+      <span id="monitor-uptime" style="font-size:11px;color:var(--gris3)">Activo: —</span>
+    </div>
+
+    <!-- Tarjetas de recursos -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:20px">
+
+      <!-- Memoria JS -->
+      <div class="pr-card" style="padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:20px">🧠</span>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">Memoria JavaScript</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--gris3)">Usada: <b id="mon-mem-used" style="color:var(--text)">—</b></span>
+          <span id="mon-mem-pct" style="font-size:12px;font-weight:700;color:var(--azul2)">—</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--gris1);overflow:hidden">
+          <div id="mon-mem-bar" style="height:100%;border-radius:3px;background:linear-gradient(90deg,#4F46E5,#818CF8);width:0%;transition:width .5s"></div>
+        </div>
+        <div style="font-size:10px;color:var(--gris3);margin-top:6px">Total asignada: <span id="mon-mem-total">—</span> / Límite: <span id="mon-mem-limit">—</span></div>
+      </div>
+
+      <!-- LocalStorage -->
+      <div class="pr-card" style="padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:20px">💾</span>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">LocalStorage</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--gris3)">Usado: <b id="mon-ls-used" style="color:var(--text)">—</b></span>
+          <span id="mon-ls-pct" style="font-size:12px;font-weight:700;color:#22C55E">—</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--gris1);overflow:hidden">
+          <div id="mon-ls-bar" style="height:100%;border-radius:3px;background:linear-gradient(90deg,#22C55E,#86EFAC);width:0%;transition:width .5s"></div>
+        </div>
+        <div style="font-size:10px;color:var(--gris3);margin-top:6px">Límite navegador: ~5 MB</div>
+        <div id="mon-ls-items" style="margin-top:10px;font-size:10.5px;display:flex;flex-direction:column;gap:4px"></div>
+      </div>
+
+      <!-- Almacenamiento Origen -->
+      <div class="pr-card" style="padding:18px 20px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:20px">🗄️</span>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">Almacenamiento Origen</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--gris3)">Usado: <b id="mon-st-used" style="color:var(--text)">—</b></span>
+          <span id="mon-st-pct" style="font-size:12px;font-weight:700;color:var(--azul2)">—</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--gris1);overflow:hidden">
+          <div id="mon-st-bar" style="height:100%;border-radius:3px;background:linear-gradient(90deg,#4F46E5,#818CF8);width:0%;transition:width .5s"></div>
+        </div>
+        <div style="font-size:10px;color:var(--gris3);margin-top:6px">Cuota total: <span id="mon-st-quota">—</span></div>
+        <div style="font-size:10px;color:var(--gris3);margin-top:4px">Incluye: localStorage, IndexedDB, Cache API</div>
+      </div>
+
+    </div>
+
+    <!-- Registros en App -->
+    <div class="pr-card" style="padding:18px 22px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <span style="font-size:20px">📂</span>
+        <span style="font-size:13px;font-weight:700;color:var(--text)">Registros en App</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:0;border:1px solid var(--gris1);border-radius:10px;overflow:hidden">
+        <div style="padding:18px;text-align:center;border-right:1px solid var(--gris1)">
+          <div id="mon-count-prestadores" style="font-size:32px;font-weight:900;color:var(--azul2);font-variant-numeric:tabular-nums;font-family:'Plus Jakarta Sans',sans-serif">—</div>
+          <div style="font-size:10.5px;color:var(--gris3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Prestadores</div>
+        </div>
+        <div style="padding:18px;text-align:center;border-right:1px solid var(--gris1)">
+          <div id="mon-count-actas" style="font-size:32px;font-weight:900;color:var(--azul2);font-variant-numeric:tabular-nums;font-family:'Plus Jakarta Sans',sans-serif">—</div>
+          <div style="font-size:10.5px;color:var(--gris3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Actas</div>
+        </div>
+        <div style="padding:18px;text-align:center;border-right:1px solid var(--gris1)">
+          <div id="mon-count-usuarios" style="font-size:32px;font-weight:900;color:var(--azul2);font-variant-numeric:tabular-nums;font-family:'Plus Jakarta Sans',sans-serif">—</div>
+          <div style="font-size:10.5px;color:var(--gris3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">Usuarios</div>
+        </div>
+        <div style="padding:18px;text-align:center">
+          <div id="mon-count-cups" style="font-size:32px;font-weight:900;color:var(--azul2);font-variant-numeric:tabular-nums;font-family:'Plus Jakarta Sans',sans-serif">—</div>
+          <div style="font-size:10.5px;color:var(--gris3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-top:4px">CUPS custom</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado del servidor -->
+    <div class="pr-card" style="padding:18px 22px;margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:20px">🖥️</span>
+          <span style="font-size:13px;font-weight:700;color:var(--text)">Estado del Servidor</span>
+        </div>
+        <button onclick="pingSrv()" style="padding:5px 12px;border-radius:7px;border:1.5px solid var(--gris1);background:transparent;font-size:11px;font-weight:600;cursor:pointer;color:var(--gris3)">🔄 Verificar</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px">
+        <div style="padding:12px;border-radius:8px;background:var(--gris0);border:1px solid var(--gris1)">
+          <div style="font-size:10px;color:var(--gris3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">BD / API</div>
+          <div id="mon-srv-db" style="font-size:13px;font-weight:700;color:var(--gris3)">—</div>
+        </div>
+        <div style="padding:12px;border-radius:8px;background:var(--gris0);border:1px solid var(--gris1)">
+          <div style="font-size:10px;color:var(--gris3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Latencia</div>
+          <div id="mon-srv-lat" style="font-size:13px;font-weight:700;color:var(--gris3)">—</div>
+        </div>
+        <div style="padding:12px;border-radius:8px;background:var(--gris0);border:1px solid var(--gris1)">
+          <div style="font-size:10px;color:var(--gris3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Modo</div>
+          <div id="mon-srv-mode" style="font-size:13px;font-weight:700;color:var(--gris3)">—</div>
+        </div>
+        <div style="padding:12px;border-radius:8px;background:var(--gris0);border:1px solid var(--gris1)">
+          <div style="font-size:10px;color:var(--gris3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Última sincronía</div>
+          <div id="mon-srv-ts" style="font-size:13px;font-weight:700;color:var(--gris3)">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
 
 </div>
 </div>
@@ -4090,7 +4226,8 @@ async function descargarActa(){
 let _mantLoaded=false;
 function switchMantTab(e,id){
   document.querySelectorAll(".mant-pane").forEach(p=>{p.style.display="none";});
-  document.getElementById(id).style.display=(id==="mant-cups"||id==="mant-tipos"||id==="mant-usuarios"||id==="mant-drive")?"block":"flex";
+  const blockPanes=["mant-cups","mant-tipos","mant-usuarios","mant-drive","mant-monitor"];
+  document.getElementById(id).style.display=blockPanes.includes(id)?"block":"flex";
   const subnav=e.target.closest("div");
   subnav.querySelectorAll(".it-btn").forEach(b=>b.classList.remove("active"));
   e.target.classList.add("active");
@@ -5825,25 +5962,184 @@ function dashIrEvaluacion(){
   </div>
 </div>
 <script>
+// ── DB STATUS BADGE ─────────────────────────────────────────────────────────
 (function(){
-  const badge = document.getElementById('db-status-badge');
-  if (!badge) return;
+  const badge=document.getElementById('db-status-badge');
+  const txt=document.getElementById('db-status-text');
+  if(!badge) return;
   fetch('/api/db-status')
-    .then(r => r.json())
-    .then(d => {
-      if (d.ok) {
-        badge.style.background = '#16a34a';
-        badge.textContent = '✅ 🖥️ Servidor · BD activa';
+    .then(r=>r.json())
+    .then(d=>{
+      badge.classList.remove('loading','error');
+      if(d.ok){
+        txt.textContent='Servidor · BD activa';
       } else {
-        badge.style.background = '#dc2626';
-        badge.textContent = '❌ 🖥️ Servidor · BD error';
+        badge.classList.add('error');
+        txt.textContent='Servidor · BD error';
       }
     })
-    .catch(() => {
-      badge.style.background = '#dc2626';
-      badge.textContent = '❌ Servidor · BD error';
+    .catch(()=>{
+      badge.classList.remove('loading');
+      badge.classList.add('error');
+      txt.textContent='Servidor · BD error';
     });
 })();
+
+// ── MONITOR ─────────────────────────────────────────────────────────────────
+let _monitorInterval=null;
+let _monitorStart=null;
+
+function fmtBytes(b){
+  if(b>=1048576) return (b/1048576).toFixed(2)+' MB';
+  if(b>=1024) return (b/1024).toFixed(1)+' KB';
+  return b+' B';
+}
+
+function actualizarMonitor(){
+  // ── Memoria JS
+  if(performance.memory){
+    const used=performance.memory.usedJSHeapSize;
+    const total=performance.memory.totalJSHeapSize;
+    const limit=performance.memory.jsHeapSizeLimit;
+    const pct=Math.round(used/limit*100);
+    document.getElementById('mon-mem-used').textContent=fmtBytes(used);
+    document.getElementById('mon-mem-total').textContent=fmtBytes(total);
+    document.getElementById('mon-mem-limit').textContent=fmtBytes(limit);
+    document.getElementById('mon-mem-pct').textContent=pct+'%';
+    document.getElementById('mon-mem-bar').style.width=Math.min(pct,100)+'%';
+  } else {
+    document.getElementById('mon-mem-used').textContent='N/D (Chrome)';
+  }
+
+  // ── LocalStorage
+  let lsBytes=0;
+  const lsItems=[];
+  try {
+    for(let k in localStorage){
+      if(!localStorage.hasOwnProperty(k)) continue;
+      const sz=(localStorage[k].length+k.length)*2;
+      lsBytes+=sz;
+      lsItems.push({k,sz});
+    }
+  } catch(e){}
+  lsItems.sort((a,b)=>b.sz-a.sz);
+  const lsLimit=5*1024*1024;
+  const lsPct=Math.round(lsBytes/lsLimit*100);
+  document.getElementById('mon-ls-used').textContent=fmtBytes(lsBytes);
+  document.getElementById('mon-ls-pct').textContent=lsPct+'%';
+  document.getElementById('mon-ls-bar').style.width=Math.min(lsPct,100)+'%';
+  const itemsEl=document.getElementById('mon-ls-items');
+  itemsEl.innerHTML=lsItems.slice(0,8).map(i=>`
+    <div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--gris1)">
+      <span style="color:var(--gris3);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:70%">${i.k}</span>
+      <span style="font-weight:600;font-size:10px;color:var(--text)">${fmtBytes(i.sz)}</span>
+    </div>`).join('');
+
+  // ── Origin Storage (IndexedDB + Cache)
+  if(navigator.storage?.estimate){
+    navigator.storage.estimate().then(({usage,quota})=>{
+      const pct=quota?Math.round(usage/quota*100):0;
+      document.getElementById('mon-st-used').textContent=fmtBytes(usage||0);
+      document.getElementById('mon-st-quota').textContent=fmtBytes(quota||0);
+      document.getElementById('mon-st-pct').textContent=pct+'%';
+      document.getElementById('mon-st-bar').style.width=Math.min(pct,100)+'%';
+    });
+  }
+
+  // ── App counts
+  document.getElementById('mon-count-prestadores').textContent=(_ips_list||[]).length;
+  const actasBadge=document.getElementById('nav-badge-actas');
+  document.getElementById('mon-count-actas').textContent=actasBadge?actasBadge.textContent:'—';
+  try {
+    const cfg=S.config||{};
+    const cups=(cfg.cups_personalizados||[]).length;
+    document.getElementById('mon-count-cups').textContent=cups;
+  } catch(e){ document.getElementById('mon-count-cups').textContent='—'; }
+
+  // ── Uptime
+  if(_monitorStart){
+    const s=Math.floor((Date.now()-_monitorStart)/1000);
+    const h=Math.floor(s/3600);
+    const m=Math.floor((s%3600)/60);
+    const ss=s%60;
+    document.getElementById('monitor-uptime').textContent=
+      `Activo: ${h}h ${String(m).padStart(2,'0')}m ${String(ss).padStart(2,'0')}s`;
+  }
+}
+
+async function cargarUsuariosCount(){
+  try {
+    const r=await fetch('/api/usuarios');
+    const d=await r.json();
+    document.getElementById('mon-count-usuarios').textContent=(d.usuarios||[]).length;
+  } catch(e){ document.getElementById('mon-count-usuarios').textContent='—'; }
+}
+
+async function pingSrv(){
+  const t0=Date.now();
+  const dbEl=document.getElementById('mon-srv-db');
+  const latEl=document.getElementById('mon-srv-lat');
+  const modeEl=document.getElementById('mon-srv-mode');
+  const tsEl=document.getElementById('mon-srv-ts');
+  dbEl.textContent='⏳ Verificando...';
+  try {
+    const r=await fetch('/api/db-status');
+    const d=await r.json();
+    const lat=Date.now()-t0;
+    dbEl.innerHTML=d.ok?'<span style="color:#22C55E">✅ Activa</span>':'<span style="color:#EF4444">❌ Error</span>';
+    latEl.textContent=lat+' ms';
+    modeEl.textContent=d.mode||'SQLite';
+    tsEl.textContent=new Date().toLocaleTimeString('es-CO');
+  } catch(e){
+    dbEl.innerHTML='<span style="color:#EF4444">❌ Sin respuesta</span>';
+    latEl.textContent='—';
+  }
+}
+
+function iniciarMonitor(){
+  if(!_monitorStart) _monitorStart=Date.now();
+  actualizarMonitor();
+  cargarUsuariosCount();
+  pingSrv();
+  if(_monitorInterval) clearInterval(_monitorInterval);
+  _monitorInterval=setInterval(actualizarMonitor,5000);
+}
+
+// ── Restaurar (backup JSON) ─────────────────────────────────────────────────
+async function restaurarBackup(){
+  try {
+    const r=await fetch('/api/ips');
+    const d=await r.json();
+    const json=JSON.stringify({prestadores:d.ips||[],ts:new Date().toISOString()},null,2);
+    const blob=new Blob([json],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='backup_prestadores_'+new Date().toISOString().slice(0,10)+'.json';
+    a.click();URL.revokeObjectURL(url);
+  } catch(e){ alert('Error al generar backup: '+e.message); }
+}
+
+// ── Sincronizar ─────────────────────────────────────────────────────────────
+async function sincronizarDatos(){
+  const btn=document.querySelector('.btn-hdr-sync');
+  if(btn){ btn.textContent='⏳ Sincronizando...'; btn.disabled=true; }
+  try {
+    _mantLoaded=false;
+    await cargarMant();
+    const rb=await fetch('/api/db-status');
+    const db=await rb.json();
+    const badge=document.getElementById('db-status-badge');
+    const txt=document.getElementById('db-status-text');
+    if(badge){
+      badge.classList.remove('loading','error');
+      if(!db.ok){ badge.classList.add('error'); txt.textContent='Servidor · BD error'; }
+      else { txt.textContent='Servidor · BD activa'; }
+    }
+    if(btn){ btn.textContent='✅ Sincronizado'; setTimeout(()=>{ btn.textContent='⇄ Sincronizar'; btn.disabled=false; },2000); }
+  } catch(e){
+    if(btn){ btn.textContent='❌ Error'; setTimeout(()=>{ btn.textContent='⇄ Sincronizar'; btn.disabled=false; },2000); }
+  }
+}
 </script>
 </body>
 </html>
