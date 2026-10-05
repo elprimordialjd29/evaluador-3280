@@ -2388,17 +2388,8 @@ async function preevaluar(){
       }
       window._pacienteMetaGlobal=_pmg;
       conteos=_preAgregar(archivos,usuariosGrupos,fechaNacPorPac);
-      // Detectar meses distintos cargados en RIPS (para metas mensuales)
-      const _mesesSet=new Set();
-      const _FECHA_KEYS={consultas:'fechaInicioAtencion',procedimientos:'fechaInicioAtencion',medicamentos:'fechaDispensacionMedicamento',otrosServicios:'fechaInicioAtencion'};
-      for(const[arch,fkey] of Object.entries(_FECHA_KEYS)){
-        for(const r of(archivos[arch]||[])){
-          const f=(r[fkey]||'').trim();
-          if(f.length>=7){const ym=f.slice(0,7).replace(/(\d{4})(\d{2})/,'$1-$2');if(/^\d{4}-\d{2}$/.test(ym)) _mesesSet.add(ym);}
-        }
-      }
-      window._mesesRips=_mesesSet.size||1;
-      window._mesesRipsLista=Array.from(_mesesSet).sort();
+      // Número de archivos cargados = multiplicador de la meta mensual
+      window._mesesRips=(_dashFiles&&_dashFiles.length)||(_evalFiles&&_evalFiles.length)||1;
     }catch(err){
       st.textContent="❌ Error JS: "+err.message;
       console.error("_preAgregar falló:",err);
