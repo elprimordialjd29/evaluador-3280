@@ -1,13 +1,10 @@
 {
   "version": 2,
-  "builds": [
+  "redirects": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": { "maxLambdaSize": "50mb", "maxDuration": 60 }
+      "source": "/(.*)",
+      "destination": "https://evaluador3280.duckdns.org/$1",
+      "permanent": false
     }
-  ],
-  "routes": [
-    { "src": "/(.*)", "dest": "api/index.py" }
   ]
 }
