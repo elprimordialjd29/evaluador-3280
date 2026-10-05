@@ -827,13 +827,25 @@ html.dark .it-btn.active{color:var(--azul2)}
       </div>
       <!-- Funcionarios -->
       <div class="form-group" style="margin-bottom:14px">
-        <label class="form-label">Funcionario(s) que realiza(n) la Evaluación</label>
+        <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+          Funcionario(s) que realiza(n) la Evaluación
+          <button onclick="_toggleGestionFunc()" style="background:none;border:none;font-size:10px;color:var(--azul2);cursor:pointer;font-weight:600;padding:0">⚙️ Gestionar lista</button>
+        </label>
         <div id="af-funcionarios-list" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
         <div style="display:flex;gap:7px">
           <select id="af-func-select" class="form-control" style="flex:1">
-            <option value="">— Seleccionar usuario —</option>
+            <option value="">— Seleccionar funcionario —</option>
           </select>
           <button class="btn btn-outline" style="font-size:11.5px;padding:5px 12px" onclick="agregarFuncionario()">+ Agregar</button>
+        </div>
+        <!-- Panel gestión de lista -->
+        <div id="af-func-gestion" style="display:none;margin-top:10px;border:1.5px solid var(--azul3);border-radius:10px;padding:12px;background:var(--azul4)">
+          <div style="font-size:11px;font-weight:700;color:var(--azul);margin-bottom:8px">Lista de funcionarios disponibles</div>
+          <div id="af-func-gestion-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
+          <div style="display:flex;gap:7px">
+            <input id="af-func-nuevo" class="form-control" placeholder="Nombre del nuevo funcionario..." style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter'){_addFuncLista();event.preventDefault()}">
+            <button class="btn btn-primary" style="font-size:11.5px;padding:5px 14px;white-space:nowrap" onclick="_addFuncLista()">+ Añadir</button>
+          </div>
         </div>
       </div>
       <!-- Puntos a tratar -->
@@ -4985,16 +4997,63 @@ async function cargarActasTab(){
   poblarFuncSelect();
 }
 
+function _getFuncLista(){
+  let stored=[];
+  try{stored=JSON.parse(localStorage.getItem('dusakawi_funcionarios')||'[]');}catch(e){}
+  return [..._FUNC_DEFAULT,...stored.filter(f=>!_FUNC_DEFAULT.includes(f))];
+}
+
 function poblarFuncSelect(){
   const sel=document.getElementById("af-func-select");if(!sel) return;
-  fetch("/api/usuarios").then(r=>r.json()).then(d=>{
-    sel.innerHTML='<option value="">— Seleccionar usuario —</option>';
-    (d.usuarios||[]).forEach(u=>{
-      const o=document.createElement("option");
-      o.value=u.nombre;o.textContent=u.nombre;
-      sel.appendChild(o);
-    });
-  }).catch(()=>{});
+  const lista=_getFuncLista();
+  sel.innerHTML='<option value="">— Seleccionar funcionario —</option>'
+    +lista.map(f=>`<option value="${f}">${f}</option>`).join('');
+}
+
+function _renderGestionFuncList(){
+  const el=document.getElementById("af-func-gestion-list");if(!el) return;
+  let stored=[];
+  try{stored=JSON.parse(localStorage.getItem('dusakawi_funcionarios')||'[]');}catch(e){}
+  const lista=_getFuncLista();
+  el.innerHTML=lista.map(f=>{
+    const esDefault=_FUNC_DEFAULT.includes(f);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:7px;background:${esDefault?'rgba(79,70,229,.06)':'#fff'};border:1px solid var(--azul3)">
+      <span style="font-size:11.5px;font-weight:600;color:var(--text)">${f}</span>
+      ${esDefault
+        ?'<span style="font-size:9.5px;color:var(--gris3);font-style:italic">predeterminado</span>'
+        :`<button onclick="_removeFuncLista('${f.replace(/'/g,"&#39;")}')" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--rojo)" title="Quitar">✕</button>`}
+    </div>`;
+  }).join('');
+}
+
+function _toggleGestionFunc(){
+  const p=document.getElementById("af-func-gestion");if(!p) return;
+  if(p.style.display==="none"){p.style.display="block";_renderGestionFuncList();}
+  else p.style.display="none";
+}
+
+function _addFuncLista(){
+  const inp=document.getElementById("af-func-nuevo");if(!inp) return;
+  const nombre=inp.value.trim().toUpperCase();
+  if(!nombre) return;
+  let stored=[];
+  try{stored=JSON.parse(localStorage.getItem('dusakawi_funcionarios')||'[]');}catch(e){}
+  if(!stored.includes(nombre)&&!_FUNC_DEFAULT.includes(nombre)){
+    stored.push(nombre);
+    localStorage.setItem('dusakawi_funcionarios',JSON.stringify(stored));
+  }
+  inp.value="";
+  poblarFuncSelect();
+  _renderGestionFuncList();
+}
+
+function _removeFuncLista(nombre){
+  let stored=[];
+  try{stored=JSON.parse(localStorage.getItem('dusakawi_funcionarios')||'[]');}catch(e){}
+  stored=stored.filter(f=>f!==nombre);
+  localStorage.setItem('dusakawi_funcionarios',JSON.stringify(stored));
+  poblarFuncSelect();
+  _renderGestionFuncList();
 }
 
 function renderActasTable(actas){
