@@ -294,9 +294,7 @@ html.dark .it-btn.active{color:var(--azul2)}
     </div>
   </div>
   <div class="header-actions">
-    {% if server_label %}
     <span id="db-status-badge" style="background:#ca8a04;color:#fff;font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;letter-spacing:.3px;transition:background .4s">🖥️ Servidor · BD...</span>
-    {% endif %}
     <div class="user-chip">
       <div class="uc-avatar">{{ current_user.nombre[0]|upper }}</div>
       <span class="uc-name">{{ current_user.nombre }}</span>
@@ -5710,7 +5708,10 @@ function dashIrEvaluacion(){
   fetch('/api/db-status')
     .then(r => r.json())
     .then(d => {
-      if (d.ok) {
+      if (d.env === 'vercel') {
+        badge.style.background = '#2563eb';
+        badge.textContent = '☁️ Vercel · BD activa';
+      } else if (d.ok) {
         badge.style.background = '#16a34a';
         badge.textContent = '✅ Servidor · BD activa';
       } else {

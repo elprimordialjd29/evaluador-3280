@@ -381,16 +381,17 @@ def index():
 @app.route("/api/db-status")
 @login_required
 def api_db_status():
+    env = "vercel" if _IS_VERCEL else os.environ.get("SERVER_LABEL", "server")
     db = _get_db()
     if db:
         try:
             db.execute("SELECT 1").fetchone()
             db.close()
-            return jsonify({"ok": True})
+            return jsonify({"ok": True, "env": env})
         except Exception:
             try: db.close()
             except: pass
-    return jsonify({"ok": False})
+    return jsonify({"ok": False, "env": env})
 
 @app.route("/api/config")
 @login_required
