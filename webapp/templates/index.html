@@ -354,30 +354,31 @@ html.dark .it-btn.active{color:var(--azul2)}
       </div>
       <div class="pr-card-body">
         <!-- Selector de prestador -->
-        <div style="margin-bottom:16px;border:1.5px solid var(--azul2);border-radius:12px;overflow:hidden;background:var(--azul4)">
-          <!-- Header -->
-          <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:linear-gradient(135deg,#1E3A8A,#2563EB)">
-            <div style="width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">🏥</div>
-            <div style="flex:1">
-              <div style="font-size:12px;font-weight:700;color:#fff">Prestador a Evaluar</div>
-              <div style="font-size:10px;color:rgba(255,255,255,.7)" id="dash-ips-header-sub">Selecciona el prestador de la lista o busca por nombre / NIT</div>
+        <div style="margin-bottom:18px">
+          <div style="font-size:10.5px;font-weight:700;color:var(--gris3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">Prestador</div>
+          <!-- Input de búsqueda -->
+          <div id="dash-ips-wrap" style="position:relative">
+            <div style="display:flex;align-items:center;border:1.5px solid var(--gris2);border-radius:10px;background:var(--card-bg);transition:border-color .15s;box-shadow:0 1px 3px rgba(0,0,0,.06)"
+              id="dash-ips-inputbox"
+              onfocusin="this.style.borderColor='#6366f1'" onfocusout="this.style.borderColor='var(--gris2)'">
+              <span style="padding:0 12px;color:#94a3b8;font-size:16px;flex-shrink:0">⊙</span>
+              <input id="dash-buscar-ips" placeholder="Buscar por contrato, nombre o régimen..."
+                oninput="_dashBuscarIPS(this.value)"
+                onfocus="_dashAbrirLista()"
+                autocomplete="off"
+                style="flex:1;border:none;background:transparent;outline:none;font-size:13px;padding:11px 4px 11px 0;color:var(--text);font-family:inherit">
+              <button id="dash-ips-limpiar-btn" onclick="_dashLimpiarIPS()" style="display:none;background:none;border:none;cursor:pointer;color:#94a3b8;padding:0 12px;font-size:18px;line-height:1">×</button>
             </div>
-            <div id="dash-ips-sel-chip" style="display:none;padding:3px 10px;background:rgba(255,255,255,.2);border-radius:20px;font-size:10.5px;color:#fff;font-weight:600;white-space:nowrap;max-width:180px;overflow:hidden;text-overflow:ellipsis"></div>
-            <button id="dash-ips-limpiar-btn" onclick="_dashLimpiarIPS()" style="display:none;background:rgba(255,255,255,.15);border:none;cursor:pointer;color:#fff;padding:4px 9px;border-radius:6px;font-size:11px">✕ Cambiar</button>
-          </div>
-          <!-- Buscador -->
-          <div style="padding:10px 14px 10px;border-bottom:1px solid var(--gris1);background:var(--card-bg)" id="dash-ips-search-wrap">
-            <div style="position:relative;display:flex;align-items:center;background:var(--gris0);border:1.5px solid var(--gris1);border-radius:10px;transition:border-color .15s"
-              onfocusin="this.style.borderColor='var(--azul2)'" onfocusout="this.style.borderColor='var(--gris1)'">
-              <span style="padding:0 10px;color:var(--gris3);font-size:15px;flex-shrink:0">🔍</span>
-              <input id="dash-buscar-ips" placeholder="Buscar por nombre, NIT o Nº contrato..."
-                oninput="_dashBuscarIPS(this.value)" autocomplete="off"
-                style="flex:1;border:none;background:transparent;outline:none;font-size:12px;padding:9px 12px 9px 0;color:var(--text);font-family:inherit">
+            <!-- Dropdown lista -->
+            <div id="dash-ips-lista" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:200;background:var(--card-bg);border:1px solid var(--gris1);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);overflow:hidden;max-height:260px;overflow-y:auto">
+              <div style="padding:20px;text-align:center;color:var(--gris3);font-size:12px">Cargando...</div>
             </div>
           </div>
-          <!-- Lista de prestadores -->
-          <div id="dash-ips-lista" style="max-height:190px;overflow-y:auto;background:var(--card-bg)">
-            <div style="padding:20px;text-align:center;color:var(--gris3);font-size:11.5px">Cargando prestadores...</div>
+          <!-- Chip prestador seleccionado -->
+          <div id="dash-ips-seleccionada" style="display:none;margin-top:8px;padding:9px 14px;background:var(--azul4);border:1.5px solid var(--azul2);border-radius:10px;display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px">✅</span>
+            <span id="dash-ips-sel-txt" style="flex:1;font-size:12px;font-weight:600;color:var(--azul)"></span>
+            <button onclick="_dashLimpiarIPS()" style="background:none;border:none;cursor:pointer;color:var(--gris3);font-size:13px;padding:0">✕ cambiar</button>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
@@ -3914,63 +3915,49 @@ async function eliminarIPS(id){
   }
 }
 
+function _dashAbrirLista(){
+  var lista=document.getElementById('dash-ips-lista');
+  if(lista) lista.style.display='block';
+  _dashBuscarIPS(document.getElementById('dash-buscar-ips').value||'');
+  // Cerrar al hacer clic fuera
+  setTimeout(function(){
+    document.addEventListener('click',function _cerrar(e){
+      var wrap=document.getElementById('dash-ips-wrap');
+      if(wrap&&!wrap.contains(e.target)){
+        var l=document.getElementById('dash-ips-lista');
+        if(l) l.style.display='none';
+        document.removeEventListener('click',_cerrar);
+      }
+    });
+  },0);
+}
+
 function _dashRenderLista(items){
   try{
-    const lista=document.getElementById('dash-ips-lista');
+    var lista=document.getElementById('dash-ips-lista');
     if(!lista) return;
     lista.innerHTML='';
     if(!items||!items.length){
-      lista.innerHTML='<div style="padding:16px;text-align:center;color:var(--gris3);font-size:11.5px">Sin prestadores registrados</div>';
+      lista.innerHTML='<div style="padding:14px 16px;font-size:12px;color:var(--gris3)">Sin prestadores registrados</div>';
       return;
     }
-    const RC={SUBSIDIADO:'#2563EB',CONTRIBUTIVO:'#7c3aed',ESPECIAL:'#0f766e'};
     items.forEach(function(ip){
       try{
-        var nMetas=0;
-        try{nMetas=_contarMetasActivas(ip.metas||{});}catch(e){}
         var activo=!!(typeof S!=='undefined'&&S.ips_activa&&S.ips_activa.id===ip.id);
-        var rc=RC[ip.regimen]||'#64748b';
         var row=document.createElement('div');
-        row.style.cssText='display:flex;align-items:center;gap:10px;padding:9px 14px;cursor:pointer;border-bottom:1px solid var(--gris1);transition:background .12s';
-        if(activo) row.style.background='var(--azul4)';
-        (function(id,a){
-          row.addEventListener('mouseenter',function(){if(!a)this.style.background='var(--gris0)';});
-          row.addEventListener('mouseleave',function(){if(!a)this.style.background='';});
+        row.style.cssText='padding:11px 16px;cursor:pointer;border-bottom:1px solid var(--gris1);'+(activo?'background:#eef2ff;':'');
+        (function(id){
+          row.addEventListener('mouseenter',function(){if(!activo)this.style.background='#f8fafc';});
+          row.addEventListener('mouseleave',function(){if(!activo)this.style.background='';});
           row.addEventListener('click',function(){_dashSeleccionarIPS(id);});
-        })(ip.id,activo);
-        var ico=document.createElement('div');
-        ico.style.cssText='width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0';
-        ico.style.background=activo?'#dbeafe':'var(--azul4)';
-        ico.textContent=activo?'✅':'🏥';
-        var info=document.createElement('div');
-        info.style.cssText='flex:1;min-width:0';
-        var n1=document.createElement('div');
-        n1.style.cssText='font-size:11.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
-        n1.textContent=ip.nombre||'—';
-        var n2=document.createElement('div');
-        n2.style.cssText='font-size:10px;color:var(--gris3);margin-top:1px';
-        n2.textContent='NIT: '+(ip.nit||'—')+' · '+(ip.municipio||'');
-        info.appendChild(n1);info.appendChild(n2);
-        var right=document.createElement('div');
-        right.style.cssText='text-align:right;flex-shrink:0';
-        var chip=document.createElement('div');
-        chip.style.cssText='font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-bottom:3px;display:inline-block';
-        chip.style.background=rc+'22';chip.style.color=rc;
-        chip.textContent=ip.regimen||'—';
-        var cto=document.createElement('div');
-        cto.style.cssText='font-size:9.5px;color:var(--gris3)';
-        cto.textContent='Cto: '+(ip.num_contrato||'—');
-        right.appendChild(chip);right.appendChild(cto);
-        var cnt=document.createElement('div');
-        cnt.style.cssText='text-align:center;flex-shrink:0;width:40px';
-        var cnum=document.createElement('div');
-        cnum.style.cssText='font-size:15px;font-weight:900;color:'+(nMetas>0?'#16a34a':'#94a3b8');
-        cnum.textContent=nMetas;
-        var clbl=document.createElement('div');
-        clbl.style.cssText='font-size:8.5px;color:var(--gris3);line-height:1.2';
-        clbl.textContent='metas';
-        cnt.appendChild(cnum);cnt.appendChild(clbl);
-        row.appendChild(ico);row.appendChild(info);row.appendChild(right);row.appendChild(cnt);
+        })(ip.id);
+        var nombre=document.createElement('div');
+        nombre.style.cssText='font-size:13px;font-weight:700;color:var(--text)';
+        nombre.textContent=ip.nombre||'—';
+        var sub=document.createElement('div');
+        sub.style.cssText='font-size:11px;color:#94a3b8;margin-top:2px';
+        sub.textContent=(ip.num_contrato||'—')+' — '+(ip.regimen||'—');
+        row.appendChild(nombre);row.appendChild(sub);
         lista.appendChild(row);
       }catch(e2){}
     });
@@ -3989,35 +3976,29 @@ function _dashBuscarIPS(q){
 }
 
 function _dashSeleccionarIPS(id){
-  const ip=(_ips_list||[]).find(i=>i.id===id);
+  var ip=(_ips_list||[]).find(function(i){return i.id===id;});
   if(!ip) return;
   S.ips_activa=ip;
-  if(ip.metas&&Object.keys(ip.metas).length){
-    S.metas=JSON.parse(JSON.stringify(ip.metas));
-  }
-  // Actualizar UI header
-  const chip=document.getElementById('dash-ips-sel-chip');
-  const limpiarBtn=document.getElementById('dash-ips-limpiar-btn');
-  const sub=document.getElementById('dash-ips-header-sub');
-  const nMetas=_contarMetasActivas(ip.metas||{});
-  if(chip){chip.textContent=ip.nombre;chip.style.display='block';}
-  if(limpiarBtn) limpiarBtn.style.display='block';
-  if(sub) sub.textContent=`${ip.num_contrato||''} · ${ip.regimen||''} · ${nMetas} actividades con meta`;
-  // Re-render lista para marcar activo
-  _dashBuscarIPS(document.getElementById('dash-buscar-ips').value||'');
+  if(ip.metas&&Object.keys(ip.metas).length) S.metas=JSON.parse(JSON.stringify(ip.metas));
+  // Cerrar dropdown y mostrar chip
+  var lista=document.getElementById('dash-ips-lista');
+  if(lista) lista.style.display='none';
+  var inp=document.getElementById('dash-buscar-ips');
+  if(inp) inp.value='';
+  var sel=document.getElementById('dash-ips-seleccionada');
+  var txt=document.getElementById('dash-ips-sel-txt');
+  var limpBtn=document.getElementById('dash-ips-limpiar-btn');
+  var nMetas=0;try{nMetas=_contarMetasActivas(ip.metas||{});}catch(e){}
+  if(txt) txt.textContent=ip.nombre+' · '+( ip.num_contrato||'—')+' · '+(ip.regimen||'—')+' · '+nMetas+' metas';
+  if(sel){sel.style.display='flex';}
+  if(limpBtn) limpBtn.style.display='block';
 }
 
 function _dashLimpiarIPS(){
-  S.ips_activa=null;
-  S.metas={};
-  document.getElementById('dash-buscar-ips').value='';
-  const chip=document.getElementById('dash-ips-sel-chip');
-  const limpiarBtn=document.getElementById('dash-ips-limpiar-btn');
-  const sub=document.getElementById('dash-ips-header-sub');
-  if(chip) chip.style.display='none';
-  if(limpiarBtn) limpiarBtn.style.display='none';
-  if(sub) sub.textContent='Selecciona el prestador de la lista o busca por nombre / NIT';
-  _dashRenderLista(_ips_list||[]);
+  S.ips_activa=null; S.metas={};
+  var inp=document.getElementById('dash-buscar-ips');if(inp) inp.value='';
+  var sel=document.getElementById('dash-ips-seleccionada');if(sel) sel.style.display='none';
+  var limpBtn=document.getElementById('dash-ips-limpiar-btn');if(limpBtn) limpBtn.style.display='none';
 }
 
 function _dashActualizarBotonesEval(){}
