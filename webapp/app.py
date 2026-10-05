@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Evaluador Res. 3280 – DUSAKAWI EPSI  v0.2
+Evaluador Res. 3280 – DUSAKAWI EPSI  v0.5.0
 Servidor Flask con autenticación, roles y gestión de prestadores
 Persistencia: Supabase (con fallback a JSON local)
 """
@@ -1310,7 +1310,7 @@ def preeval_exportar():
 
     # Pie
     row += 1
-    ws[f"A{row}"] = f"Generado: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} · Evaluador Res. 3280 v0.4.3 · DUSAKAWI EPSI"
+    ws[f"A{row}"] = f"Generado: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M')} · Evaluador Res. 3280 v0.5.0 · DUSAKAWI EPSI"
     ws[f"A{row}"].font = Font(italic=True, size=9, color="9CA3AF")
 
     buf = io.BytesIO()
