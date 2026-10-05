@@ -11,6 +11,7 @@ from functools import wraps
 from flask import (Flask, request, jsonify, render_template, send_file,
                    send_from_directory, session, redirect, url_for)
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from evaluator import RIPSEvaluator
 
@@ -27,6 +28,7 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 DATA_PATH.mkdir(parents=True, exist_ok=True)
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 app.json.sort_keys = False  # preservar orden de actividades según config
 app.secret_key = os.environ.get("SECRET_KEY", "dusakawi_3280_secret_2026")
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024  # 200 MB
