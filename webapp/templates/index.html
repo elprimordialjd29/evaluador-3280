@@ -5302,7 +5302,8 @@ function renderActaPreview(){
       <tr>
         <td style="${L}">LUGAR</td>
         <td style="${V}">${a.lugar||'VALLEDUPAR'}</td>
-        <td colspan="2" style="${V}"></td>
+        <td style="${L}">REP. LEGAL IPS</td>
+        <td style="${V}">${a.rep_ips||''}</td>
         <td style="${L}">Nº CONTRATO</td>
         <td style="${V}">${a.num_contrato||''}</td>
       </tr>
@@ -5324,7 +5325,7 @@ function renderActaPreview(){
   const totDesc=progData.reduce((s,p)=>s+p.descuento,0);
 
   const barHtml=progData.length?`
-    <div style="border:${BRD};border-top:none;padding:10px 12px 6px">
+    <div style="border:${BRD};border-top:none;padding:10px 12px 6px;page-break-inside:avoid">
       <div style="font-size:10pt;font-weight:700;text-align:center;margin-bottom:10px">PROMOCION Y MANTENIMIENTO DE LA SALUD</div>
       <div style="position:relative;height:160px;border-left:1px solid #555;border-bottom:1px solid #555;margin:0 8px 24px">
         ${['120%','100%','80%','60%','40%','20%','0%'].map((v,i)=>{
@@ -5344,7 +5345,10 @@ function renderActaPreview(){
             <div style="position:absolute;bottom:-32px;left:${x-(barW*0.15)}%;width:${barW*1.3}%;text-align:center;font-size:5.5pt;color:#333;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${p.nombre}</div>
           `;}).join('')}
       </div>
-    </div>`:`<div style="border:${BRD};border-top:none;padding:14px;text-align:center;color:#999;font-size:8pt;font-style:italic">Sin datos de evaluación cargados</div>`;
+    </div>`:`<div style="border:${BRD};border-top:none;padding:20px;text-align:center">
+      <div style="font-size:10pt;font-weight:700;margin-bottom:8px">PROMOCION Y MANTENIMIENTO DE LA SALUD</div>
+      <div style="color:#bbb;font-size:8pt;font-style:italic">[ Gráfica generada automáticamente al cargar resultados de evaluación ]</div>
+    </div>`;
 
   // ── Párrafo post-gráfica ────────────────────────────────────────────────
   const postBar=a.parrafo_despues_grafico?`
@@ -5401,12 +5405,12 @@ function renderActaPreview(){
     <td style="width:50%;padding:8px 16px 14px;border:${BRD};text-align:center;vertical-align:bottom">
       <div style="height:50px"></div>
       <div style="border-top:1px solid #333;width:80%;margin:0 auto 6px"></div>
-      <div style="font-size:9pt;font-weight:700;color:#111">${nom||'—'}</div>
-      <div style="font-size:7.5pt;color:#444;margin-top:2px">${cargo}</div>
+      <div style="font-size:9pt;font-weight:700;color:#111;min-height:14px">${nom||''}</div>
+      <div style="font-size:7.5pt;color:#444;margin-top:2px;text-transform:uppercase;letter-spacing:.3px">${cargo}</div>
     </td>`;
 
   const funcs=(a.funcionarios||[]);
-  const funcNom=funcs.length?funcs.join(' / '):a.evaluador||'—';
+  const funcNom=funcs.length?funcs.join(' / '):a.evaluador||'';
 
   document.getElementById("acta-preview-doc").innerHTML=`
     ${hdr('1 DE 2')}
