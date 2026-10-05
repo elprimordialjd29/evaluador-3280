@@ -405,6 +405,25 @@ def api_config():
                     "rutas_diag": cfg.get("rutas_diag", {})})
 
 # ══════════════════════════════════════════════════════════════════════════
+@app.route("/api/debug-db")
+def debug_db():
+    import traceback as _tb
+    result = {"db_path": str(_DB_PATH), "is_vercel": _IS_VERCEL, "db_exists": _DB_PATH.exists()}
+    try:
+        db = _get_db()
+        if db:
+            cnt = db.execute("SELECT COUNT(*) FROM prestadores").fetchone()[0]
+            tables = [r[0] for r in db.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+            db.close()
+            result.update({"db_ok": True, "prestadores_count": cnt, "tables": tables})
+        else:
+            result["db_ok"] = False
+    except Exception as e:
+        result["db_ok"] = False
+        result["error"] = str(e)
+        result["trace"] = _tb.format_exc()
+    return jsonify(result)
+
 # RUTAS PRESTADORES (IPS)
 # ══════════════════════════════════════════════════════════════════════════
 @app.route("/api/ips", methods=["GET"])
