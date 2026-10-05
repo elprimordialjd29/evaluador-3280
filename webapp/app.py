@@ -74,7 +74,6 @@ def _migrate_db(conn):
         ("lma",             "TEXT DEFAULT '{}'"),
         ("metas",           "TEXT DEFAULT '{}'"),
         ("creado_por",      "TEXT DEFAULT ''"),
-        ("created_at",      "TEXT DEFAULT (datetime('now'))"),
     ]:
         if col not in cols:
             conn.execute(f"ALTER TABLE prestadores ADD COLUMN {col} {defn}")
@@ -137,7 +136,7 @@ def _load_users():
     db = _get_db()
     if db:
         try:
-            rows = db.execute("SELECT * FROM usuarios ORDER BY created_at").fetchall()
+            rows = db.execute("SELECT * FROM usuarios ORDER BY rowid").fetchall()
             db.close()
             if rows:
                 return [{"id": r["id"], "nombre": r["nombre"], "username": r["username"],
@@ -184,7 +183,7 @@ def _load_ips():
     db = _get_db()
     if db:
         try:
-            rows = db.execute("SELECT * FROM prestadores ORDER BY created_at").fetchall()
+            rows = db.execute("SELECT * FROM prestadores ORDER BY rowid").fetchall()
             db.close()
             if rows is not None:
                 result = []
@@ -250,7 +249,7 @@ def _load_actas():
     db = _get_db()
     if db:
         try:
-            rows = db.execute("SELECT * FROM actas ORDER BY created_at DESC").fetchall()
+            rows = db.execute("SELECT * FROM actas ORDER BY rowid DESC").fetchall()
             db.close()
             if rows is not None:
                 return [{
