@@ -1446,8 +1446,10 @@ function renderMetasTabla(){
       return `<tr data-meta-act="${aid}" style="border-bottom:1px solid var(--gris1)">
         <td style="padding:4px 8px;font-size:10.5px">${act.descripcion}</td>
         <td style="padding:4px 8px;text-align:center">
-          <input type="number" min="0" value="${metaVal}" id="mm_${p.id}_${aid}"
-            oninput="recalcUPC('${p.id}')"
+          <input type="number" min="0" inputmode="numeric" value="${metaVal}" id="mm_${p.id}_${aid}"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'');recalcUPC('${p.id}')"
+            onkeydown="if(event.key==='Tab'){_metaTabNav(event,this)}"
+            onkeypress="if(!/[0-9]/.test(event.key))event.preventDefault()"
             style="width:70px;padding:3px 6px;font-size:10.5px;border:1px solid var(--gris1);border-radius:4px;text-align:center">
         </td>
         <td id="upc_m_${p.id}_${aid}" style="padding:4px 8px;text-align:right;font-size:10.5px;color:var(--gris3);white-space:nowrap">$0,00</td>
@@ -1516,6 +1518,21 @@ function _sumMetasProg(pid){
     s+=el?parseFloat(el.value||0):0;
   });
   return s;
+}
+
+function _metaTabNav(e, el){
+  // Obtiene todos los inputs de meta visibles en el modal, navega con Tab/Shift+Tab
+  const container = document.getElementById('m-metas-tablas');
+  if(!container) return;
+  const inputs = Array.from(container.querySelectorAll('input[type="number"]:not(.lma-input)'));
+  const idx = inputs.indexOf(el);
+  if(idx === -1) return;
+  const next = e.shiftKey ? inputs[idx-1] : inputs[idx+1];
+  if(!next) return;
+  e.preventDefault();
+  next.focus();
+  next.select();
+  next.scrollIntoView({block:'nearest', behavior:'smooth'});
 }
 
 function recalcUPC(pid){
