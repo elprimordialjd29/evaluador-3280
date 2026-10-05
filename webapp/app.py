@@ -43,9 +43,11 @@ _sessions = {}
 # ── SQLite ──────────────────────────────────────────────────────────────────
 # Ruta de la base de datos: variable de entorno o carpeta data/ junto al app
 _DB_PATH = Path(os.environ.get("SQLITE_DB", str(BASE_DIR.parent / "data" / "evaluador.db")))
+_db_ready = False  # inicializar schema solo una vez por proceso
 
 def _get_db():
     """Retorna conexión SQLite en autocommit, o None en Vercel."""
+    global _db_ready
     if _IS_VERCEL:
         return None
     try:
@@ -54,7 +56,9 @@ def _get_db():
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
-        _init_db(conn)
+        if not _db_ready:
+            _init_db(conn)
+            _db_ready = True
         return conn
     except Exception as e:
         import traceback; traceback.print_exc()
