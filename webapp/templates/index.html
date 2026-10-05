@@ -1714,7 +1714,13 @@ function abrirNuevoIPS(){
 function toggleMetasManual(){
   const el=document.getElementById("m-metas-manual");
   el.style.display=el.style.display==="none"?"block":"none";
-  if(el.style.display==="block") renderMetasTabla();
+  if(el.style.display==="block"){
+    if(!S.config){
+      cargarConfig().then(()=>renderMetasTabla());
+    } else {
+      renderMetasTabla();
+    }
+  }
 }
 
 function _grupoPrograma(pid){

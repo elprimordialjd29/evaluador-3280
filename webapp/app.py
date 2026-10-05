@@ -5,6 +5,7 @@ Servidor Flask con autenticación, roles y gestión de prestadores
 Persistencia: SQLite local (en servidor Contabo) con fallback JSON
 """
 import json, os, datetime, uuid, hashlib, sqlite3
+from datetime import timedelta
 from pathlib import Path
 from functools import wraps
 from flask import (Flask, request, jsonify, render_template, send_file,
@@ -29,6 +30,9 @@ app = Flask(__name__)
 app.json.sort_keys = False  # preservar orden de actividades según config
 app.secret_key = os.environ.get("SECRET_KEY", "dusakawi_3280_secret_2026")
 app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024  # 200 MB
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = False
 
 # ── Almacén en memoria ─────────────────────────────────────────────────────
 _sessions = {}
