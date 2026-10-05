@@ -38,7 +38,9 @@ _sessions = {}
 _DB_PATH = Path(os.environ.get("SQLITE_DB", str(BASE_DIR.parent / "data" / "evaluador.db")))
 
 def _get_db():
-    """Retorna conexión SQLite o None si no se puede abrir."""
+    """Retorna conexión SQLite o None si no aplica (Vercel usa JSON fallback)."""
+    if _IS_VERCEL:
+        return None
     try:
         _DB_PATH.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(str(_DB_PATH))
