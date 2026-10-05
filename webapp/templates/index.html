@@ -3743,13 +3743,39 @@ function renderChart(res){
   const container=document.getElementById("charts-container");
   container.innerHTML="";
 
-  // Una barra por programa (nivel programa)
-  const lbls=[],vals=[],cols=[];
+  // Grupos consolidados: [label, [fragmentos de nombre_acta para agrupar]]
+  const _GRUPOS=[
+    ["INDIVIDUALES\nPRIMERA INFANCIA",       ["PRIMERA INFANCIA 1M"]],
+    ["INDIVIDUALES\nINFANCIA 6-11",          ["INFANCIA 6 - 11"]],
+    ["INDIVIDUALES\nADOLESCENTES 12-17",     ["ADOLESCENTES 12"]],
+    ["INDIVIDUALES\nJÓVENES 18-28",          ["JOVENES 18"]],
+    ["INDIVIDUALES\nADULTOS 29-59",          ["ADULTOS 29"]],
+    ["INDIVIDUALES\nADULTOS MAYORES",        ["ADULTOS MAYORES"]],
+    ["PAI",                                  ["PAI"]],
+    ["MATERNO\nPERINATAL",                   ["RUTA MATERNO PERINATAL · ATENCION PRECONCEPCIONAL","RUTA MATERNO PERINATAL · INTERRUPCION","RUTA MATERNO PERINATAL · ATENCION CUIDADO","RUTA MATERNO PERINATAL · ATENCION DEL PARTO"]],
+    ["ATENCIÓN\nPOSPARTO",                   ["POSPARTO"]],
+    ["DEMANDA\nINDUCIDA",                    ["RUTA INTEGRAL DEMANDA INDUCIDA"]],
+    ["RUTA RIESGO\nCARDIOVASCULAR",          ["RUTA CEREBROVASCULAR","CEREBROVASCULAR","RIESGO-BAJO"]],
+  ];
+
+  // Construir mapa nombre_acta → pct
+  const pctMap={};
   for(const[,r] of Object.entries(res)){
-    const p=parseFloat(((r.pct_cumplimiento||0)*100).toFixed(1));
-    lbls.push((r.nombre||"").toUpperCase());
-    vals.push(p);
-    cols.push(p>=100?"#4CAF82":p>=90?"#F4B942":"#C00000");
+    const acta=(r.nombre_acta||r.nombre||"").toUpperCase();
+    pctMap[acta]=(r.pct_cumplimiento||0)*100;
+  }
+
+  const lbls=[],vals=[],cols=[];
+  for(const[lbl,keys] of _GRUPOS){
+    const matched=[];
+    for(const [acta,pct] of Object.entries(pctMap)){
+      if(keys.some(k=>acta.includes(k.toUpperCase()))) matched.push(pct);
+    }
+    if(!matched.length) continue; // omitir grupo sin datos
+    const avg=parseFloat((matched.reduce((a,b)=>a+b,0)/matched.length).toFixed(1));
+    lbls.push(lbl);
+    vals.push(avg);
+    cols.push(avg>=100?"#4CAF82":avg>=90?"#F4B942":"#C00000");
   }
   if(!lbls.length) return;
 
