@@ -59,6 +59,8 @@ def _migrate_db(conn):
     for col, defn in [
         ("departamento",    "TEXT DEFAULT ''"),
         ("rep_legal",       "TEXT DEFAULT ''"),
+        ("num_actas",       "INTEGER DEFAULT 0"),
+        ("activo",          "INTEGER DEFAULT 1"),
         ("vigencia_inicio", "TEXT DEFAULT ''"),
         ("vigencia_fin",    "TEXT DEFAULT ''"),
         ("tipo_contrato",   "TEXT DEFAULT 'ASISTENCIAL'"),
