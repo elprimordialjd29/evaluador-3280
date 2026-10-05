@@ -318,7 +318,7 @@ html.dark .it-btn.active{color:var(--azul2)}
 </div>
 
 <div class="nav-tabs">
-  <button class="nav-tab active" onclick="switchTab(event,'tab-dashboard');_dashRenderLista(_ips_list||[])">📊 Dashboard</button>
+  <button class="nav-tab active" onclick="switchTab(event,'tab-dashboard');cargarIPS()">📊 Dashboard</button>
   <button class="nav-tab" onclick="switchTab(event,'tab-evaluacion')">⚡ Evaluación</button>
   <button class="nav-tab" onclick="switchTab(event,'tab-actas');cargarActasTab()">📋 Actas <span id="nav-badge-actas" class="nav-badge">0</span></button>
   {% if current_user.rol in ['admin','evaluador'] %}
