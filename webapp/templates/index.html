@@ -5488,9 +5488,38 @@ function _actualizarResumenActa(a){
   if(qr) qr.textContent=funcs.length?funcs.join(' / '):'(no asignado)';
 }
 
+// Mapea leerInfo() al formato que espera renderActaPreview() (campos af-*)
+function _leerInfoComoActa(){
+  const i=leerInfo();
+  const ev=_eval5Seleccionados.length?_eval5Seleccionados
+    :(i.evaluador?i.evaluador.split(' / '):[]);
+  return {
+    acta_num:i.acta_num,
+    fecha_eval:i.fecha_eval,
+    periodo_evaluado:i.periodo||i.periodo_fin||'',
+    vigencia_contrato:i.vigencia||'',
+    empresa:i.empresa,
+    nit:i.nit,
+    regimen:i.regimen,
+    municipio:i.municipio,
+    lugar:i.lugar||'VALLEDUPAR',
+    num_contrato:i.num_contrato,
+    rep_ips:i.rep_ips,
+    rep_epsi:i.rep_epsi,
+    coordinador:i.coordinador,
+    puntos_a_tratar:document.getElementById('puntos_tratar')?.value||i.puntos_tratar||'',
+    objetivo:document.getElementById('objetivo')?.value||i.objetivo||'',
+    desarrollo_conclusiones:document.getElementById('desarrollo')?.value||i.desarrollo||'',
+    parrafo_despues_grafico:document.getElementById('parrafo_post')?.value||i.parrafo_post||'',
+    observaciones:document.getElementById('observaciones')?.value||i.observaciones||'',
+    funcionarios:ev,
+    evaluador:ev.join(' / '),
+  };
+}
+
 // ── Vista Previa — idéntica al PDF DR-BC-AP-F-11 ──────────────────────────
 function renderActaPreview(){
-  const a=leerActaForm();
+  const a=window._step5PreviewMode?_leerInfoComoActa():leerActaForm();
   const resData=_acta_actual?.resultados||S._resultados||{};
   const progData=(resData.resumen||[]).map(p=>({
     nombre:p.nombre||'—',
@@ -5912,7 +5941,14 @@ function _tab5(tab){
   document.getElementById('tab5-prev').style.display=tab==='prev'?'block':'none';
   document.getElementById('tab5-form-btn').style.cssText='padding:10px 18px;font-size:12.5px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:2.5px solid '+(tab==='form'?'var(--azul);color:var(--azul)':'transparent;color:var(--gris3)');
   document.getElementById('tab5-prev-btn').style.cssText='padding:10px 18px;font-size:12.5px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:2.5px solid '+(tab==='prev'?'var(--azul);color:var(--azul)':'transparent;color:var(--gris3)');
-  if(tab==='prev'){window._step5PreviewMode=true;renderActaPreview();window._step5PreviewMode=false;}
+  if(tab==='prev'){
+    // Auto-agregar si hay algo seleccionado y aún no se ha hecho clic en Agregar
+    if(_eval5Seleccionados.length===0){
+      const sel=document.getElementById('step5-eval-select');
+      if(sel?.value) _agregarEval5();
+    }
+    window._step5PreviewMode=true;renderActaPreview();window._step5PreviewMode=false;
+  }
 }
 
 // Inicializar al cargar
