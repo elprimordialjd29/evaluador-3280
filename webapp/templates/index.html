@@ -4074,14 +4074,53 @@ function renderResultados(data){
       <td><span class="pct-cell" style="background:${bc};color:${tc}">${pct(pp)}</span></td></tr>`;
   }).join("")+`<tr class="tr-total"><td>TOTAL EJECUCIÓN</td><td>${fmt(tot.exigido)}</td><td>${fmt(tot.reconocido)}</td><td>${fmt(tot.descuento)}</td><td>${pct(tot.pct||0)}</td></tr>`
   +`<tr class="tr-total" style="background:var(--rojo2,#FEE2E2)"><td style="color:var(--rojo,#DC2626)">TOTAL DESCUENTO (No Incluye PAI)</td><td colspan="2"></td><td style="color:var(--rojo,#DC2626);font-weight:800">${fmt((data.resumen||[]).filter(p=>!p.nombre.toUpperCase().includes('PAI')).reduce((s,p)=>s+p.descuento,0))}</td><td></td></tr>`;
-  document.getElementById("acta-mini-resumen").innerHTML=`<div style="background:var(--azul4);border-radius:8px;padding:12px;margin-bottom:14px">
-    <div style="font-size:11.5px;font-weight:700;color:var(--azul);margin-bottom:6px">Resumen</div>
-    <div style="display:flex;gap:18px;font-size:12px;flex-wrap:wrap">
-      <div>Exigido: <strong>${fmt(tot.exigido)}</strong></div>
-      <div>Reconocido: <strong>${fmt(tot.reconocido)}</strong></div>
-      <div style="color:var(--rojo)">Descuento: <strong>${fmt(tot.descuento)}</strong></div>
-      <div>Cumplimiento: <strong>${pct(tot.pct||0)}</strong></div>
-    </div></div>`;
+  // Tabla 1 resumen + quien realizó para Step 5
+  const _evNom=leerInfo().evaluador||'—';
+  const _thS='padding:5px 8px;font-size:10px;font-weight:700;color:#fff;text-align:right;border-bottom:1.5px solid rgba(255,255,255,.3)';
+  const _tdS='padding:4px 8px;font-size:11px;border-bottom:1px solid var(--azul3)';
+  const _resFilas=(data.resumen||[]).map(p=>{
+    const _pct=p.pct||0;
+    const _col=_pct>=100?'var(--verde,#16a34a)':_pct>=70?'var(--azul2)':'var(--rojo,#DC2626)';
+    return `<tr>
+      <td style="${_tdS}">${p.nombre}</td>
+      <td style="${_tdS};text-align:right;font-variant-numeric:tabular-nums">${fmt(p.exigido)}</td>
+      <td style="${_tdS};text-align:right;font-variant-numeric:tabular-nums">${fmt(p.reconocido)}</td>
+      <td style="${_tdS};text-align:right;font-variant-numeric:tabular-nums;color:${p.descuento>0?'var(--rojo,#DC2626)':'inherit'}">${fmt(p.descuento)}</td>
+      <td style="${_tdS};text-align:center;font-weight:700;color:${_col}">${Math.round(_pct)}%</td>
+    </tr>`;
+  }).join('');
+  document.getElementById("acta-mini-resumen").innerHTML=`
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--azul);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Tabla 1 – Resumen de Evaluación</div>
+      <div style="overflow-x:auto;border-radius:8px;border:1.5px solid var(--azul3)">
+        <table style="width:100%;border-collapse:collapse">
+          <thead><tr style="background:var(--azul)">
+            <th style="${_thS};text-align:left">Programa</th>
+            <th style="${_thS}">Vr Exigido</th>
+            <th style="${_thS}">Vr Reconocido</th>
+            <th style="${_thS}">Descuento</th>
+            <th style="${_thS};text-align:center">% Cumpl.</th>
+          </tr></thead>
+          <tbody>
+            ${_resFilas}
+            <tr style="font-weight:700;background:var(--azul4)">
+              <td style="${_tdS};border-top:2px solid var(--azul2)">TOTAL EJECUCIÓN</td>
+              <td style="${_tdS};text-align:right;border-top:2px solid var(--azul2);font-variant-numeric:tabular-nums">${fmt(tot.exigido)}</td>
+              <td style="${_tdS};text-align:right;border-top:2px solid var(--azul2);font-variant-numeric:tabular-nums">${fmt(tot.reconocido)}</td>
+              <td style="${_tdS};text-align:right;border-top:2px solid var(--azul2);font-variant-numeric:tabular-nums;color:${tot.descuento>0?'var(--rojo,#DC2626)':'inherit'}">${fmt(tot.descuento)}</td>
+              <td style="${_tdS};text-align:center;border-top:2px solid var(--azul2);font-weight:700;color:${(tot.pct||0)>=100?'var(--verde,#16a34a)':(tot.pct||0)>=70?'var(--azul2)':'var(--rojo,#DC2626)'}">${pct(tot.pct||0)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;background:var(--azul4);border:1.5px solid var(--azul2);border-radius:10px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px">
+        <div style="font-size:18px;line-height:1">👤</div>
+        <div>
+          <div style="font-size:10px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Quien realizó la evaluación</div>
+          <div style="font-size:12px;font-weight:600">${_evNom}</div>
+        </div>
+      </div>
+    </div>`;
   renderActaPreview(data);
 }
 
