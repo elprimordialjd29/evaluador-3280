@@ -484,30 +484,60 @@ html.dark .it-btn.active{color:var(--azul2)}
 
     <!-- Step 1 -->
     <div id="step1" class="step-pane">
-      <!-- Buscador rápido de prestador -->
+      <!-- Campos ocultos del prestador — se llenan automáticamente al seleccionar -->
+      <input type="hidden" id="empresa">
+      <input type="hidden" id="nit">
+      <input type="hidden" id="regimen">
+      <input type="hidden" id="municipio">
+      <input type="hidden" id="vigencia">
+      <input type="hidden" id="num_contrato">
+      <input type="hidden" id="rep_ips">
+
+      <!-- Selector de Prestador -->
       <div class="pr-card" style="margin-bottom:14px">
         <div class="pr-card-header" style="padding:12px 16px">
-          <div class="pr-card-icon" style="font-size:16px">🔍</div>
-          <div><div class="pr-card-title" style="font-size:13px">Cargar datos desde prestador registrado</div>
-          <div class="pr-card-sub" style="font-size:11px">Busca por nombre, NIT o Nº contrato para auto-rellenar el formulario</div></div>
+          <div class="pr-card-icon" style="font-size:18px">🏥</div>
+          <div><div class="pr-card-title">Prestador</div>
+          <div class="pr-card-sub">Selecciona el prestador a evaluar</div></div>
         </div>
         <div class="pr-card-body" style="padding:10px 16px 14px">
-          <div style="position:relative">
-            <input id="step1-buscar-ips" class="form-control" placeholder="Buscar prestador por nombre, NIT o contrato..."
-              oninput="_step1BuscarIPS(this.value)"
-              autocomplete="off"
-              style="padding-left:32px">
-            <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris3);pointer-events:none">🔍</span>
+          <!-- Buscador (oculto cuando hay selección) -->
+          <div id="step1-buscar-wrap">
+            <div style="position:relative">
+              <input id="step1-buscar-ips" class="form-control" placeholder="Buscar por nombre, NIT o Nº contrato..."
+                oninput="_step1BuscarIPS(this.value)" autocomplete="off" style="padding-left:32px">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--gris3);pointer-events:none">🔍</span>
+            </div>
+            <div id="step1-ips-resultados" style="display:none;margin-top:6px;border:1px solid var(--gris1);border-radius:8px;overflow:hidden;max-height:200px;overflow-y:auto;background:var(--card-bg)"></div>
           </div>
-          <div id="step1-ips-resultados" style="display:none;margin-top:6px;border:1px solid var(--gris1);border-radius:8px;overflow:hidden;max-height:200px;overflow-y:auto;background:var(--card-bg)"></div>
-          <div id="step1-ips-seleccionada" style="display:none;margin-top:8px;padding:8px 12px;background:var(--verde3);border:1px solid var(--verde2);border-radius:8px;font-size:11.5px;color:var(--verde)"></div>
+          <!-- Tarjeta resumen del prestador seleccionado -->
+          <div id="step1-ips-seleccionada" style="display:none">
+            <div style="background:var(--azul4);border:1.5px solid var(--azul2);border-radius:10px;padding:12px 14px">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+                <div style="flex:1">
+                  <div id="s1-nombre" style="font-size:14px;font-weight:800;color:var(--azul)"></div>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:7px;font-size:11.5px;color:var(--text)">
+                    <span><span style="color:var(--gris3);font-weight:600">NIT:</span> <span id="s1-nit"></span></span>
+                    <span><span style="color:var(--gris3);font-weight:600">Contrato:</span> <span id="s1-contrato"></span></span>
+                    <span><span style="color:var(--gris3);font-weight:600">Vigencia:</span> <span id="s1-vigencia"></span></span>
+                    <span><span style="color:var(--gris3);font-weight:600">Régimen:</span> <span id="s1-regimen"></span></span>
+                    <span><span style="color:var(--gris3);font-weight:600">Municipio:</span> <span id="s1-municipio"></span></span>
+                    <span><span style="color:var(--gris3);font-weight:600">Metas:</span> <span id="s1-metas"></span></span>
+                  </div>
+                </div>
+                <button onclick="_step1LimpiarSeleccion()" style="background:none;border:1px solid var(--gris1);border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;color:var(--gris3);white-space:nowrap">✕ Cambiar</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- Datos de la Evaluación -->
       <div class="pr-card">
-        <div class="pr-card-header"><div class="pr-card-icon">📋</div><div><div class="pr-card-title">Datos del Acta</div><div class="pr-card-sub">Información del prestador y periodo evaluado</div></div></div>
+        <div class="pr-card-header"><div class="pr-card-icon">📋</div><div><div class="pr-card-title">Datos de la Evaluación</div><div class="pr-card-sub">Periodo, acta y responsables</div></div></div>
         <div class="pr-card-body">
           <div class="form-grid-2">
-            <!-- Nº Acta auto -->
+            <!-- Nº Acta -->
             <div class="form-group" style="grid-column:1/-1">
               <label class="form-label">Nº Acta</label>
               <div style="display:flex;gap:8px;align-items:center">
@@ -524,14 +554,7 @@ html.dark .it-btn.active{color:var(--azul2)}
             </div>
             <div class="form-group"><label class="form-label">Fecha Evaluación</label><input id="fecha_eval" class="form-control" type="date"></div>
             <div class="form-group"><label class="form-label">Período Evaluado</label><input id="periodo" class="form-control" placeholder="Abril 2026, Mayo 2026, Junio 2026"></div>
-            <div class="form-group"><label class="form-label">Vigencia Contrato</label><input id="vigencia" class="form-control" placeholder="01/03/2026 - 31/12/2026"></div>
-            <div class="form-group"><label class="form-label">Empresa / IPS</label><input id="empresa" class="form-control" placeholder="IPSI KARAQUITA"></div>
-            <div class="form-group"><label class="form-label">NIT</label><input id="nit" class="form-control"></div>
-            <div class="form-group"><label class="form-label">Régimen</label><select id="regimen" class="form-control"><option>SUBSIDIADO</option><option>CONTRIBUTIVO</option><option>ESPECIAL</option></select></div>
-            <div class="form-group"><label class="form-label">Municipio</label><input id="municipio" class="form-control"></div>
             <div class="form-group"><label class="form-label">Lugar</label><input id="lugar" class="form-control" value="VALLEDUPAR"></div>
-            <div class="form-group"><label class="form-label">Nº Contrato</label><input id="num_contrato" class="form-control" oninput="_autoActaNum()"></div>
-            <div class="form-group"><label class="form-label">Rep. Legal IPS</label><input id="rep_ips" class="form-control"></div>
             <!-- Rep EPSI global -->
             <div class="form-group">
               <label class="form-label" style="display:flex;align-items:center;gap:6px">
@@ -4551,15 +4574,14 @@ function _step1BuscarIPS(q){
 function _step1SeleccionarIPS(id){
   const ip=(_ips_list||[]).find(i=>i.id===id);
   if(!ip) return;
-  // Auto-rellenar campos del formulario
-  const set=(fid,val)=>{const el=document.getElementById(fid);if(el&&val)el.value=val;};
+  // Llenar campos ocultos para leerInfo()
+  const set=(fid,val)=>{const el=document.getElementById(fid);if(el)el.value=val||'';};
   set('empresa', ip.nombre);
   set('nit', ip.nit);
   set('municipio', ip.municipio);
   set('num_contrato', ip.num_contrato);
   set('rep_ips', ip.rep_legal);
-  const sel=document.getElementById('regimen');
-  if(sel&&ip.regimen) sel.value=ip.regimen;
+  set('regimen', ip.regimen);
   if(ip.vigencia_inicio&&ip.vigencia_fin){
     const fmt=d=>d?d.split('T')[0]:'';
     set('vigencia', `${fmt(ip.vigencia_inicio)} - ${fmt(ip.vigencia_fin)}`);
@@ -4569,12 +4591,30 @@ function _step1SeleccionarIPS(id){
     S.metas=JSON.parse(JSON.stringify(ip.metas));
   }
   S.ips_activa=ip;
-  // Cerrar buscador y mostrar confirmación
+  // Cerrar buscador, mostrar tarjeta resumen
   document.getElementById('step1-ips-resultados').style.display='none';
   document.getElementById('step1-buscar-ips').value='';
-  const sel2=document.getElementById('step1-ips-seleccionada');
-  sel2.style.display='block';
-  sel2.innerHTML=`✅ Prestador cargado: <strong>${ip.nombre}</strong> · ${_contarMetasActivas(ip.metas||{})} actividades con meta`;
+  document.getElementById('step1-buscar-wrap').style.display='none';
+  const fmt=d=>d?d.split('T')[0]:'—';
+  const vig=ip.vigencia_inicio&&ip.vigencia_fin?`${fmt(ip.vigencia_inicio)} / ${fmt(ip.vigencia_fin)}`:'—';
+  document.getElementById('s1-nombre').textContent=ip.nombre||'—';
+  document.getElementById('s1-nit').textContent=ip.nit||'—';
+  document.getElementById('s1-contrato').textContent=ip.num_contrato||'—';
+  document.getElementById('s1-vigencia').textContent=vig;
+  document.getElementById('s1-regimen').textContent=ip.regimen||'—';
+  document.getElementById('s1-municipio').textContent=ip.municipio||'—';
+  document.getElementById('s1-metas').textContent=_contarMetasActivas(ip.metas||{})+' actividades';
+  document.getElementById('step1-ips-seleccionada').style.display='block';
+}
+function _step1LimpiarSeleccion(){
+  S.ips_activa=null; S.metas={};
+  ['empresa','nit','municipio','num_contrato','rep_ips','regimen','vigencia'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.value='';
+  });
+  document.getElementById('step1-ips-seleccionada').style.display='none';
+  document.getElementById('step1-buscar-wrap').style.display='block';
+  document.getElementById('step1-buscar-ips').value='';
+  document.getElementById('step1-ips-resultados').style.display='none';
 }
 
 function iniciarEvalIPSMant(id){
