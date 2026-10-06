@@ -5531,76 +5531,76 @@ function renderActaPreview(){
   }));
 
   const AZUL="#1a3a6b";
-  const BRD="1px solid #aaa";
+  const BRD="1px solid #888";
+  const LBL_BG="#1a1a1a";
 
-  // ── Encabezado (idéntico al PDF) ─────────────────────────────────────────
-  // El PDF muestra logo de imagen a la izquierda. Sin imagen, usamos texto institucional.
   const hdr=(pag)=>`
-    <table style="width:100%;border-collapse:collapse;border:${BRD};margin-bottom:0;font-family:Arial,sans-serif">
+    <table style="width:100%;border-collapse:collapse;border:1px solid #555;margin-bottom:0;font-family:Arial,sans-serif">
       <tr>
-        <td style="width:130px;padding:6px 8px;border-right:${BRD};text-align:center;vertical-align:middle">
+        <td style="width:120px;padding:6px 8px;border-right:1px solid #555;text-align:center;vertical-align:middle">
           <img src="data:image/png;base64,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" style="display:block;margin:0 auto;max-width:110px;max-height:80px;object-fit:contain">
         </td>
-        <td style="padding:8px 16px;border-right:${BRD};text-align:center;vertical-align:middle">
-          <div style="font-size:7.5pt;color:#444;letter-spacing:.3px">PROCESO: GESTIÓN DEL RIESGO EN SALUD</div>
-          <div style="font-size:15pt;font-weight:900;color:${AZUL};letter-spacing:.3px;margin-top:2px">ACTA DE EVALUACIÓN DE SERVICIOS</div>
+        <td style="padding:8px 16px;border-right:1px solid #555;text-align:center;vertical-align:middle">
+          <div style="font-size:7.5pt;color:#555;letter-spacing:.3px">PROCESO: GESTIÓN DEL RIESGO EN SALUD</div>
+          <div style="font-size:14pt;font-weight:900;color:#000;letter-spacing:.3px;margin-top:2px">ACTA DE EVALUACIÓN DE SERVICIOS</div>
         </td>
-        <td style="width:150px;padding:6px 10px;font-size:8pt;color:#111;line-height:2;vertical-align:top">
-          <div>CÓDIGO: DR-BC-AP-F-11</div>
-          <div>VERSIÓN: 02</div>
-          <div>EMISIÓN: 15/06/2022</div>
-          <div>VIGENCIA: 27/12/2028</div>
-          <div>PÁGINA ${pag}</div>
+        <td style="width:155px;padding:6px 10px;font-size:7.5pt;color:#111;line-height:1.85;vertical-align:top">
+          <div><b>CÓDIGO:</b> DGR-BAJ-FT-11</div>
+          <div><b>VERSIÓN:</b> 02</div>
+          <div><b>EMISIÓN:</b> 15/06/2022</div>
+          <div><b>VIGENCIA:</b> 02/03/2028</div>
+          <div><b>PÁGINA</b> ${pag}</div>
         </td>
       </tr>
     </table>`;
 
   // ── Info prestador ────────────────────────────────────────────────────────
   // PDF: labels en negrita, celdas con bordes finos, sin color de fondo en labels
-  const L=`font-weight:700;font-size:8pt;padding:3px 6px;border:${BRD};white-space:nowrap;background:#f2f2f2`;
-  const V=`font-size:8pt;padding:3px 6px;border:${BRD}`;
+  const L=`font-weight:700;font-size:8pt;padding:3px 6px;border:${BRD};white-space:nowrap;background:${LBL_BG};color:#fff`;
+  const V=`font-size:8pt;padding:3px 6px;border:${BRD};background:#fff;color:#000`;
   const infoTable=`
     <table style="width:100%;border-collapse:collapse;border-top:none">
       <tr>
-        <td style="${L}">ACTA Nº</td>
+        <td style="${L}">ACTA N°:</td>
         <td style="${V}">${a.acta_num||''}</td>
-        <td style="${L}">FECHA DE EVALUACIÓN</td>
+        <td style="${L}">FECHA DE EVALUACIÓN:</td>
         <td style="${V}">${a.fecha_eval||''}</td>
-        <td style="${L}">PERIODO EVALUADO</td>
+        <td style="${L}">PERIODO EVALUADO:</td>
         <td style="${V}">${a.periodo_evaluado||''}</td>
       </tr>
       <tr>
         <td style="${L}">VIGENCIA DEL CONTRATO:</td>
         <td colspan="3" style="${V}">${a.vigencia_contrato||''}</td>
-        <td style="${L}">EMPRESA</td>
+        <td style="${L}">EMPRESA:</td>
         <td style="${V}">${a.empresa||''}</td>
       </tr>
       <tr>
-        <td style="${L}">NIT</td>
+        <td style="${L}">NIT:</td>
         <td style="${V}">${a.nit||''}</td>
-        <td style="${L}">REGIMEN</td>
+        <td style="${L}">REGIMEN:</td>
         <td style="${V}">${a.regimen||''}</td>
-        <td style="${L}">MUNICIPIO</td>
+        <td style="${L}">MUNICIPIO:</td>
         <td style="${V}">${a.municipio||''}</td>
       </tr>
       <tr>
-        <td style="${L}">LUGAR</td>
-        <td style="${V}">${a.lugar||'VALLEDUPAR'}</td>
-        <td style="${L}">REP. LEGAL IPS</td>
-        <td style="${V}">${a.rep_ips||''}</td>
-        <td style="${L}">Nº CONTRATO</td>
+        <td style="${L}">LUGAR:</td>
+        <td colspan="3" style="${V}">${a.lugar||'VALLEDUPAR'}</td>
+        <td style="${L}">N° CONTRATO:</td>
         <td style="${V}">${a.num_contrato||''}</td>
       </tr>
     </table>`;
 
   // ── Sección de textos (UNA sola caja, como el PDF) ────────────────────────
+  const SL=`font-weight:700;font-size:8pt;padding:3px 8px;border:${BRD};border-top:none;background:#e8e8e8;color:#000`;
+  const SC=`font-size:8pt;padding:5px 8px;border:${BRD};border-top:none;background:#fff;line-height:1.55;color:#000`;
   const txtSection=`
-    <table style="width:100%;border-collapse:collapse;border:${BRD};border-top:none">
-      <tr><td style="padding:5px 8px;font-size:8pt;line-height:1.55">
-        <div><b>PUNTOS A TRATAR:</b><br>${a.puntos_a_tratar||''}</div>
-        <div style="margin-top:4px"><b>OBJETIVO:</b><br>${a.objetivo||''}</div>
-        <div style="margin-top:4px"><b>DESARROLLO Y CONCLUSIONES</b><br>${a.desarrollo_conclusiones||''}</div>
-      </td></tr>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="${SL}">PUNTOS A TRATAR:</td></tr>
+      <tr><td style="${SC}">${a.puntos_a_tratar||''}</td></tr>
+      <tr><td style="${SL}">OBJETIVO:</td></tr>
+      <tr><td style="${SC}">${a.objetivo||''}</td></tr>
+      <tr><td style="${SL}">DESARROLLO Y CONCLUSIONES:</td></tr>
+      <tr><td style="${SC}">${a.desarrollo_conclusiones||''}</td></tr>
     </table>`;
 
   // ── Gráfica (igual que en el PDF — "PROMOCION Y MANTENIMIENTO DE LA SALUD") ──
@@ -5609,29 +5609,35 @@ function renderActaPreview(){
   const totRec=_tot.reconocido||progData.reduce((s,p)=>s+p.reconocido,0);
   const totDesc=_tot.descuento||progData.reduce((s,p)=>s+p.descuento,0);
 
+  const chartTitle=resData.titulo||'Servicios Asistenciales';
+  const TEAL="#4DB6AC";
   const barHtml=progData.length?`
-    <div style="border:${BRD};border-top:none;padding:10px 12px 6px;page-break-inside:avoid">
-      <div style="font-size:10pt;font-weight:700;text-align:center;margin-bottom:10px">PROMOCION Y MANTENIMIENTO DE LA SALUD</div>
-      <div style="position:relative;height:160px;border-left:1px solid #555;border-bottom:1px solid #555;margin:0 8px 24px">
-        ${['120%','100%','80%','60%','40%','20%','0%'].map((v,i)=>{
-          const t=i*(160/6);
-          return `<div style="position:absolute;top:${t}px;left:0;right:0;border-top:${i===1?'1px dashed #999':'none'};font-size:6pt;color:#666;left:-28px;width:26px;text-align:right">${v}</div>`;
-        }).join('')}
-        ${progData.map((p,i)=>{
-          const w=100/progData.length;
-          const pct=Math.min(p.pct,120);
-          const h=(pct/120)*160;
-          const x=i*w+w*0.1;
-          const barW=w*0.7;
-          const col=p.pct>=100?"#1a3a6b":p.pct>=70?"#2d6ca2":"#5b9bd5";
-          return `
-            <div style="position:absolute;bottom:0;left:${x}%;width:${barW}%;background:${col};height:${h}px"></div>
-            <div style="position:absolute;bottom:${h+1}px;left:${x}%;width:${barW}%;text-align:center;font-size:6.5pt;font-weight:700">${Math.round(p.pct)}%</div>
-            <div style="position:absolute;bottom:-32px;left:${x-(barW*0.15)}%;width:${barW*1.3}%;text-align:center;font-size:5.5pt;color:#333;line-height:1.2;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">${p.nombre}</div>
-          `;}).join('')}
+    <div style="border:${BRD};border-top:none;padding:10px 14px 8px;page-break-inside:avoid;background:#fff">
+      <div style="font-size:10pt;font-weight:700;text-align:center;margin-bottom:12px;color:#000">${chartTitle}</div>
+      <div style="display:flex;align-items:flex-end;gap:0;position:relative;padding-left:32px">
+        <div style="position:absolute;left:0;top:0;bottom:24px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;width:30px">
+          ${['120%','100%','80%','60%','40%','20%','0%'].map(v=>`<div style="font-size:6pt;color:#555;padding-right:3px">${v}</div>`).join('')}
+        </div>
+        <div style="flex:1;position:relative;border-left:1.5px solid #555;border-bottom:1.5px solid #555">
+          <div style="position:absolute;top:${(20/120)*160}px;left:0;right:0;border-top:1.5px dashed #aaa;z-index:1"></div>
+          <div style="display:flex;align-items:flex-end;height:160px;padding:0 4px">
+            ${progData.map(p=>{
+              const pct=Math.min(p.pct,120);
+              const h=(pct/120)*160;
+              return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:160px;padding:0 2px">
+                <div style="font-size:6.5pt;font-weight:700;margin-bottom:2px;color:#000">${Math.round(p.pct)}%</div>
+                <div style="width:100%;max-width:40px;background:${TEAL};height:${h}px"></div>
+              </div>`;}).join('')}
+          </div>
+        </div>
       </div>
-    </div>`:`<div style="border:${BRD};border-top:none;padding:20px;text-align:center">
-      <div style="font-size:10pt;font-weight:700;margin-bottom:8px">PROMOCION Y MANTENIMIENTO DE LA SALUD</div>
+      <div style="display:flex;padding-left:32px;margin-top:4px">
+        <div style="flex:1;display:flex">
+          ${progData.map(p=>`<div style="flex:1;text-align:center;font-size:5.5pt;color:#333;line-height:1.3;padding:0 1px;word-break:break-word">${p.nombre}</div>`).join('')}
+        </div>
+      </div>
+    </div>`:`<div style="border:${BRD};border-top:none;padding:20px;text-align:center;background:#fff">
+      <div style="font-size:10pt;font-weight:700;margin-bottom:8px;color:#000">Servicios Asistenciales</div>
       <div style="color:#bbb;font-size:8pt;font-style:italic">[ Gráfica generada automáticamente al cargar resultados de evaluación ]</div>
     </div>`;
 
@@ -5710,14 +5716,16 @@ function renderActaPreview(){
     <div style="margin:28px 0 0;border-top:2px dashed #bbb;padding-top:6px;font-size:6pt;color:#aaa;text-align:center">— PÁGINA 2 DE 2 —</div>
     ${hdr('2 DE 2')}
     <div style="border:${BRD};border-top:none;padding:6px 8px;font-size:8pt;line-height:1.5">${parrafo2}</div>
-    <div style="border:${BRD};border-top:none;padding:6px 8px;font-size:8pt;line-height:1.55">
-      <b>OBSERVACIONES:</b><br>
-      <b>NOTA:</b> ${notaTxt}
-      <br><br>${obs1}
-      <br><br>${obs2}
-      <br><br>${obs3}
-      ${obsCustom?`<br><br>${obsCustom}`:''}
-    </div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr><td style="${SL}">OBSERVACIONES:</td></tr>
+      <tr><td style="${SC}">
+        <div>• <b>NOTA:</b> ${notaTxt}</div>
+        <br><div>• ${obs1}</div>
+        <br><div>• ${obs2}</div>
+        <br><div>• ${obs3}</div>
+        ${obsCustom?`<br><div>• ${obsCustom}</div>`:''}
+      </td></tr>
+    </table>
     <table style="width:100%;border-collapse:collapse;margin-top:24px">
       <tr>
         ${firma(a.rep_ips,'REPRESENTANTE LEGAL IPS')}
