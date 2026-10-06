@@ -4015,11 +4015,16 @@ function renderResultados(data){
       <div class="res-col"><div class="rc-label">Descuento</div><div class="rc-val ${res.total_descuento>0?'neg':''}">${fmt(res.total_descuento)}</div></div>
       <div class="badge-pct ${bc}">${pct(p)}</div></div>
       <div class="res-body"><div class="det-wrap"><table class="det-table">
-        <thead><tr><th>Actividad</th><th>Meta</th><th>Ejecutado</th><th>Conciliado</th><th>Disc.</th><th>Vr Exigido</th><th>Descuento</th><th>Reconocido</th></tr></thead>
-        <tbody>${res.actividades.map(a=>`<tr><td>${a.descripcion}</td><td>${a.meta}</td><td>${a.ejecutado}</td><td>${a.conciliado}</td>
-          <td class="${a.discordancia>0?'disc':''}">${a.discordancia}</td>
-          <td>${fmt(a.valor_meta)}</td><td class="${a.valor_descuento>0?'disc':''}">${fmt(a.valor_descuento)}</td><td>${fmt(a.valor_reconocido)}</td></tr>`).join("")}
-          <tr class="tot-row"><td colspan="5">TOTAL ${res.nombre}</td><td>${fmt(res.total_exigido)}</td><td>${fmt(res.total_descuento)}</td><td>${fmt(res.total_reconocido)}</td></tr>
+        <thead><tr><th>Descripción del CUPS</th><th style="text-align:center">Act. Conciliada</th><th>Vr Metas Conciliadas</th><th style="text-align:center">Discordancia</th><th>UPC</th><th>Vr a Descontar</th><th>Vr a Reconocer</th></tr></thead>
+        <tbody>${res.actividades.map(a=>`<tr>
+          <td>${a.descripcion}</td>
+          <td style="text-align:center">${a.conciliado}</td>
+          <td>${fmt(a.valor_meta)}</td>
+          <td style="text-align:center" class="${a.discordancia>0?'disc':''}">${a.discordancia||0}</td>
+          <td>${fmt(a.upc)}</td>
+          <td class="${a.valor_descuento>0?'disc':''}">${fmt(a.valor_descuento)}</td>
+          <td>${fmt(a.valor_reconocido)}</td></tr>`).join("")}
+          <tr class="tot-row"><td colspan="2">TOTAL ${res.nombre}</td><td>${fmt(res.total_exigido)}</td><td></td><td></td><td>${fmt(res.total_descuento)}</td><td>${fmt(res.total_reconocido)}</td></tr>
         </tbody></table></div></div>`;
     db.appendChild(card);
   }
@@ -4033,7 +4038,8 @@ function renderResultados(data){
     return `<tr><td>${p.nombre}</td><td>${fmt(p.exigido)}</td><td>${fmt(p.reconocido)}</td>
       <td class="${p.descuento>0?'neg':''}">${fmt(p.descuento)}</td>
       <td><span class="pct-cell" style="background:${bc};color:${tc}">${pct(pp)}</span></td></tr>`;
-  }).join("")+`<tr class="tr-total"><td>TOTAL</td><td>${fmt(tot.exigido)}</td><td>${fmt(tot.reconocido)}</td><td>${fmt(tot.descuento)}</td><td>${pct(tot.pct||0)}</td></tr>`;
+  }).join("")+`<tr class="tr-total"><td>TOTAL EJECUCIÓN</td><td>${fmt(tot.exigido)}</td><td>${fmt(tot.reconocido)}</td><td>${fmt(tot.descuento)}</td><td>${pct(tot.pct||0)}</td></tr>`
+  +`<tr class="tr-total" style="background:var(--rojo2,#FEE2E2)"><td style="color:var(--rojo,#DC2626)">TOTAL DESCUENTO (No Incluye PAI)</td><td colspan="2"></td><td style="color:var(--rojo,#DC2626);font-weight:800">${fmt((data.resumen||[]).filter(p=>!p.nombre.toUpperCase().includes('PAI')).reduce((s,p)=>s+p.descuento,0))}</td><td></td></tr>`;
   document.getElementById("acta-mini-resumen").innerHTML=`<div style="background:var(--azul4);border-radius:8px;padding:12px;margin-bottom:14px">
     <div style="font-size:11.5px;font-weight:700;color:var(--azul);margin-bottom:6px">Resumen</div>
     <div style="display:flex;gap:18px;font-size:12px;flex-wrap:wrap">
