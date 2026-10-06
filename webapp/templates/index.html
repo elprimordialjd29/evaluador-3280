@@ -637,6 +637,20 @@ html.dark .it-btn.active{color:var(--azul2)}
 
     <!-- Step 3 — Pre-evaluación RIPS -->
     <div id="step3" class="step-pane" style="display:none">
+      <!-- Encabezado: datos del prestador y periodo -->
+      <div id="preeval-header" style="display:none;background:var(--azul4);border:1.5px solid var(--azul2);border-radius:10px;padding:12px 16px;margin-bottom:12px">
+        <div style="display:flex;flex-wrap:wrap;gap:6px 24px;font-size:12px">
+          <div style="font-size:14px;font-weight:800;color:var(--azul);width:100%" id="ph-nombre"></div>
+          <div><span style="color:var(--gris3);font-weight:600">NIT:</span> <span id="ph-nit"></span></div>
+          <div><span style="color:var(--gris3);font-weight:600">Contrato:</span> <span id="ph-contrato"></span></div>
+          <div><span style="color:var(--gris3);font-weight:600">Régimen:</span> <span id="ph-regimen"></span></div>
+          <div><span style="color:var(--gris3);font-weight:600">Municipio:</span> <span id="ph-municipio"></span></div>
+          <div><span style="color:var(--gris3);font-weight:600">Período:</span> <span id="ph-periodo"></span></div>
+          <div><span style="color:var(--gris3);font-weight:600">Fecha Evaluación:</span> <span id="ph-fecha"></span></div>
+          <div><span style="color:var(--gris3);font-weight:600">Vigencia:</span> <span id="ph-vigencia"></span></div>
+          <div><span style="color:var(--gris3);font-weight:600">Acta:</span> <span id="ph-acta"></span></div>
+        </div>
+      </div>
       <div class="pr-card">
         <div class="pr-card-header">
           <div class="pr-card-icon">🔍</div>
@@ -3559,6 +3573,21 @@ function imprimirAuditoria(){
 
 function renderPreeval(d){
   _preevalDatos=d;
+  // Llenar encabezado de prestador y periodo
+  const ip=S.ips_activa||{};
+  const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val||'—';};
+  set('ph-nombre', ip.nombre);
+  set('ph-nit', ip.nit);
+  set('ph-contrato', ip.num_contrato);
+  set('ph-regimen', ip.regimen);
+  set('ph-municipio', ip.municipio);
+  set('ph-periodo', document.getElementById('periodo')?.value);
+  set('ph-fecha', document.getElementById('fecha_eval')?.value);
+  const vigEl=document.getElementById('vigencia');
+  set('ph-vigencia', vigEl?.value||(ip.vigencia_inicio&&ip.vigencia_fin?ip.vigencia_inicio.split('T')[0]+' / '+ip.vigencia_fin.split('T')[0]:null));
+  set('ph-acta', document.getElementById('acta_num')?.value);
+  const hdr=document.getElementById('preeval-header');
+  if(hdr) hdr.style.display=ip.nombre?'block':'none';
   const usarFin=_preevalConFin;
   const COLORS={
     "📋 Cursos de Vida":"#1E40AF","🤰 Ruta Materna":"#9D174D",
