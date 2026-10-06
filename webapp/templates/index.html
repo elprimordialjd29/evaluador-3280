@@ -738,15 +738,8 @@ html.dark .it-btn.active{color:var(--azul2)}
             <textarea id="observaciones" class="form-control" rows="3" placeholder="Los servicios Asistenciales son objeto de seguimiento en términos de calidad..."></textarea></div>
         </div>
         <!-- Vista Previa tab -->
-        <div id="tab5-prev" style="display:none;padding:16px">
-          <div id="acta-preview" style="border:1.5px solid var(--gris1);border-radius:10px;overflow:hidden;background:#fff;max-width:900px;margin:0 auto">
-            <!-- Todo se genera dinámicamente por renderActaPreview() -->
-            <div id="apv-info"></div>
-            <div id="apv-textos" style="display:none"></div>
-            <tbody id="apv-tbody" style="display:none"></tbody>
-            <div id="apv-obs"></div>
-            <div id="apv-firmas"></div>
-          </div>
+        <div id="tab5-prev" style="display:none;padding:16px;background:#9CA3AF">
+          <div id="step5-preview-doc" style="width:210mm;min-height:297mm;background:#fff;margin:0 auto;padding:14mm 14mm 14mm 14mm;font-family:'Arial',sans-serif;font-size:9pt;box-shadow:0 4px 24px rgba(0,0,0,.25)"></div>
         </div>
       </div>
     </div>
@@ -5541,7 +5534,8 @@ function renderActaPreview(){
   const funcs=(a.funcionarios||[]);
   const funcNom=funcs.length?funcs.join(' / '):a.evaluador||'';
 
-  document.getElementById("acta-preview-doc").innerHTML=`
+  const _previewTarget=window._step5PreviewMode?'step5-preview-doc':'acta-preview-doc';
+  document.getElementById(_previewTarget).innerHTML=`
     ${hdr('1 DE 2')}
     ${infoTable}
     ${txtSection}
@@ -5703,7 +5697,7 @@ function _tab5(tab){
   document.getElementById('tab5-prev').style.display=tab==='prev'?'block':'none';
   document.getElementById('tab5-form-btn').style.cssText='padding:10px 18px;font-size:12.5px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:2.5px solid '+(tab==='form'?'var(--azul);color:var(--azul)':'transparent;color:var(--gris3)');
   document.getElementById('tab5-prev-btn').style.cssText='padding:10px 18px;font-size:12.5px;font-weight:700;border:none;background:none;cursor:pointer;border-bottom:2.5px solid '+(tab==='prev'?'var(--azul);color:var(--azul)':'transparent;color:var(--gris3)');
-  if(tab==='prev') renderActaPreview(S._resultados||{resumen:[],totales:{}});
+  if(tab==='prev'){window._step5PreviewMode=true;renderActaPreview();window._step5PreviewMode=false;}
 }
 
 // Inicializar al cargar
