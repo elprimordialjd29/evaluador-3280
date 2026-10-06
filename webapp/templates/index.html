@@ -903,6 +903,18 @@ html.dark .it-btn.active{color:var(--azul2)}
         <label class="form-label">Observaciones</label>
         <textarea id="af-obs" class="form-control" rows="2"></textarea>
       </div>
+      <!-- Resumen de evaluación + Quien realizó -->
+      <div id="af-resumen-bloque" style="display:none;margin-top:18px;border-top:1.5px solid var(--azul3);padding-top:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--azul);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Tabla 1 – Resumen de Evaluación</div>
+        <div id="af-tabla1-wrap" style="overflow-x:auto;border-radius:8px;border:1.5px solid var(--azul3)"></div>
+        <div style="margin-top:14px;background:var(--azul4);border:1.5px solid var(--azul2);border-radius:10px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px">
+          <div style="font-size:18px;line-height:1">👤</div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Funcionario(s) que realizó(aron) la Evaluación</div>
+            <div id="af-quienrealizo" style="font-size:12px;font-weight:600;color:var(--texto)">—</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -5251,6 +5263,7 @@ async function abrirActaDetalle(id){
   // Funcionarios
   const fl=document.getElementById("af-funcionarios-list");
   fl.innerHTML=(a.funcionarios||[]).map(f=>crearChipFuncionario(f)).join("");
+  _actualizarResumenActa(a);
   document.getElementById("acta-detail-num").textContent="Acta Nº "+a.acta_num;
   switchActaView("form");
   document.getElementById("actas-list-view").style.display="none";
@@ -5326,7 +5339,7 @@ async function eliminarActa(id){
 function crearChipFuncionario(nombre){
   return `<span class="func-chip" data-nombre="${nombre}" style="display:inline-flex;align-items:center;gap:5px;background:var(--azul4);border:1.5px solid var(--azul3);border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:600;color:var(--azul)">
     ${nombre}
-    <button onclick="this.closest('.func-chip').remove()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gris3);line-height:1">✕</button>
+    <button onclick="this.closest('.func-chip').remove();_syncQuienRealizo()" style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--gris3);line-height:1">✕</button>
   </span>`;
 }
 
@@ -5334,10 +5347,69 @@ function agregarFuncionario(){
   const sel=document.getElementById("af-func-select");
   const nombre=sel.value;if(!nombre) return;
   const fl=document.getElementById("af-funcionarios-list");
-  // No duplicar
   if([...fl.querySelectorAll(".func-chip")].some(c=>c.dataset.nombre===nombre)) return;
   fl.insertAdjacentHTML("beforeend",crearChipFuncionario(nombre));
   sel.value="";
+  _syncQuienRealizo();
+}
+
+function _syncQuienRealizo(){
+  const funcs=[...document.querySelectorAll("#af-funcionarios-list .func-chip")].map(c=>c.dataset.nombre);
+  const qr=document.getElementById('af-quienrealizo');
+  if(qr) qr.textContent=funcs.length?funcs.join(' / '):'(no asignado)';
+  const bloque=document.getElementById('af-resumen-bloque');
+  if(bloque&&bloque.style.display==='none'&&funcs.length) bloque.style.display='block';
+}
+
+function _actualizarResumenActa(a){
+  const res=a?.resultados||{};
+  const progData=Object.entries(res).map(([pid,r])=>({
+    nombre:r.nombre_acta||pid,
+    pct:r.pct_cumplimiento||0,
+    exigido:r.total_exigido||0,
+    reconocido:r.total_reconocido||0,
+    descuento:r.total_descuento||0,
+  }));
+  const bloque=document.getElementById('af-resumen-bloque');
+  if(!bloque) return;
+  const tw=document.getElementById('af-tabla1-wrap');
+  if(progData.length){
+    const totExig=progData.reduce((s,p)=>s+p.exigido,0);
+    const totRec=progData.reduce((s,p)=>s+p.reconocido,0);
+    const totDesc=progData.reduce((s,p)=>s+p.descuento,0);
+    const totPct=totExig>0?Math.round(totRec/totExig*100):0;
+    const thS='padding:5px 8px;font-size:10px;font-weight:700;text-align:right;border-bottom:1.5px solid rgba(255,255,255,.3)';
+    const tdS='padding:4px 8px;font-size:11px;border-bottom:1px solid var(--azul3)';
+    tw.innerHTML=`<table style="width:100%;border-collapse:collapse">
+      <thead><tr style="background:var(--azul);color:#fff">
+        <th style="${thS};text-align:left">Programa</th>
+        <th style="${thS}">Vr Exigido</th>
+        <th style="${thS}">Vr Reconocido</th>
+        <th style="${thS}">Descuento</th>
+        <th style="${thS};text-align:center">% Cumpl.</th>
+      </tr></thead>
+      <tbody>
+        ${progData.map(p=>`<tr>
+          <td style="${tdS}">${p.nombre}</td>
+          <td style="${tdS};text-align:right;font-variant-numeric:tabular-nums">${fmt(p.exigido)}</td>
+          <td style="${tdS};text-align:right;font-variant-numeric:tabular-nums">${fmt(p.reconocido)}</td>
+          <td style="${tdS};text-align:right;font-variant-numeric:tabular-nums;color:${p.descuento>0?'var(--rojo,#DC2626)':'inherit'}">${fmt(p.descuento)}</td>
+          <td style="${tdS};text-align:center;font-weight:700;color:${p.pct>=100?'var(--verde,#16a34a)':p.pct>=70?'var(--azul2)':'var(--rojo,#DC2626)'}">${Math.round(p.pct)}%</td>
+        </tr>`).join('')}
+        <tr style="font-weight:700;background:var(--azul4)">
+          <td style="${tdS};border-top:2px solid var(--azul2)">TOTAL EJECUCIÓN</td>
+          <td style="${tdS};text-align:right;border-top:2px solid var(--azul2);font-variant-numeric:tabular-nums">${fmt(totExig)}</td>
+          <td style="${tdS};text-align:right;border-top:2px solid var(--azul2);font-variant-numeric:tabular-nums">${fmt(totRec)}</td>
+          <td style="${tdS};text-align:right;border-top:2px solid var(--azul2);font-variant-numeric:tabular-nums;color:${totDesc>0?'var(--rojo,#DC2626)':'inherit'}">${fmt(totDesc)}</td>
+          <td style="${tdS};text-align:center;border-top:2px solid var(--azul2);font-weight:700;color:${totPct>=100?'var(--verde,#16a34a)':totPct>=70?'var(--azul2)':'var(--rojo,#DC2626)'}">${totPct}%</td>
+        </tr>
+      </tbody>
+    </table>`;
+    bloque.style.display='block';
+  }
+  const funcs=(a?.funcionarios||[]);
+  const qr=document.getElementById('af-quienrealizo');
+  if(qr) qr.textContent=funcs.length?funcs.join(' / '):'(no asignado)';
 }
 
 // ── Vista Previa — idéntica al PDF DR-BC-AP-F-11 ──────────────────────────
