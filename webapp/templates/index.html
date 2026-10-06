@@ -725,6 +725,28 @@ html.dark .it-btn.active{color:var(--azul2)}
         <!-- Formulario tab -->
         <div id="tab5-form" class="pr-card-body">
           <div id="acta-mini-resumen"></div>
+          <!-- Quien realizó la evaluación (editable en Step 5) -->
+          <div class="form-group" style="margin-bottom:14px">
+            <label class="form-label" style="display:flex;align-items:center;justify-content:space-between">
+              Funcionario(s) que realizó(aron) la Evaluación
+              <button onclick="_toggleGestionFunc5()" style="background:none;border:none;font-size:10px;color:var(--azul2);cursor:pointer;font-weight:600;padding:0">⚙️ Gestionar lista</button>
+            </label>
+            <div id="step5-evaluadores-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+            <div style="display:flex;gap:7px">
+              <select id="step5-eval-select" class="form-control" style="flex:1">
+                <option value="">— Seleccionar funcionario —</option>
+              </select>
+              <button class="btn btn-outline" style="font-size:11.5px;padding:5px 12px" onclick="_agregarEval5()">+ Agregar</button>
+            </div>
+            <div id="step5-func-gestion" style="display:none;margin-top:10px;border:1.5px solid var(--azul3);border-radius:10px;padding:12px;background:var(--azul4)">
+              <div style="font-size:11px;font-weight:700;color:var(--azul);margin-bottom:8px">Lista de funcionarios disponibles</div>
+              <div id="step5-func-gestion-list" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px"></div>
+              <div style="display:flex;gap:7px">
+                <input id="step5-func-nuevo" class="form-control" placeholder="Nombre del nuevo funcionario..." style="flex:1;font-size:12px" onkeydown="if(event.key==='Enter'){_addFuncLista5();event.preventDefault()}">
+                <button class="btn btn-primary" style="font-size:11.5px;padding:5px 14px;white-space:nowrap" onclick="_addFuncLista5()">+ Añadir</button>
+              </div>
+            </div>
+          </div>
           <div style="font-size:11px;font-weight:700;color:var(--azul);margin:10px 0 8px;text-transform:uppercase;letter-spacing:.5px">Textos del Acta</div>
           <div class="form-group"><label class="form-label">Puntos a Tratar</label>
             <textarea id="puntos_tratar" class="form-control" rows="3">Revisión y confrontación de resultados del seguimiento a las actividades de recuperación de la salud y atención primaria, reportadas según Anexo No. 12 por la Coordinación de Baja Complejidad</textarea></div>
@@ -2289,8 +2311,8 @@ function goStep(n){
       else w.querySelector(".ws-num").textContent=i;
     }
   });
-  // Al entrar al paso 5, refrescar mini-resumen si hay resultados en memoria
-  if(n===5) _refrescarMiniResumen();
+  // Al entrar al paso 5, refrescar mini-resumen y poblar selector de evaluadores
+  if(n===5){_poblarEvalSelect5();_refrescarMiniResumen();}
   // Al entrar al paso 2, pre-cargar metas del prestador activo
   if(n===2){
     const metasIPS=S.ips_activa?.metas||{};
@@ -4050,6 +4072,8 @@ function _refrescarMiniResumen(){
   const _totPct=tot.pct||0;
   const el=document.getElementById("acta-mini-resumen");
   if(!el) return;
+  // Sincronizar campo oculto evaluador con el selector de step5
+  const _evNom5=_eval5Seleccionados.length?_eval5Seleccionados.join(' / '):(leerInfo().evaluador||'—');
   el.innerHTML=`
     <div style="margin-bottom:14px">
       <div style="font-size:11px;font-weight:700;color:var(--azul);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Tabla 1 – Resumen de Evaluación</div>
@@ -4078,7 +4102,7 @@ function _refrescarMiniResumen(){
         <div style="font-size:18px;line-height:1">👤</div>
         <div>
           <div style="font-size:10px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Quien realizó la evaluación</div>
-          <div style="font-size:12px;font-weight:600">${_evNom}</div>
+          <div style="font-size:12px;font-weight:600">${_evNom5}</div>
         </div>
       </div>
     </div>`;
@@ -5414,21 +5438,22 @@ function _syncQuienRealizo(){
 
 function _actualizarResumenActa(a){
   const res=a?.resultados||{};
-  const progData=Object.entries(res).map(([pid,r])=>({
-    nombre:r.nombre_acta||pid,
-    pct:r.pct_cumplimiento||0,
-    exigido:r.total_exigido||0,
-    reconocido:r.total_reconocido||0,
-    descuento:r.total_descuento||0,
+  const progData=(res.resumen||[]).map(p=>({
+    nombre:p.nombre||'—',
+    pct:p.pct||0,
+    exigido:p.exigido||0,
+    reconocido:p.reconocido||0,
+    descuento:p.descuento||0,
   }));
+  const _totA=res.totales||{};
   const bloque=document.getElementById('af-resumen-bloque');
   if(!bloque) return;
   const tw=document.getElementById('af-tabla1-wrap');
   if(progData.length){
-    const totExig=progData.reduce((s,p)=>s+p.exigido,0);
-    const totRec=progData.reduce((s,p)=>s+p.reconocido,0);
-    const totDesc=progData.reduce((s,p)=>s+p.descuento,0);
-    const totPct=totExig>0?Math.round(totRec/totExig*100):0;
+    const totExig=_totA.exigido||progData.reduce((s,p)=>s+p.exigido,0);
+    const totRec=_totA.reconocido||progData.reduce((s,p)=>s+p.reconocido,0);
+    const totDesc=_totA.descuento||progData.reduce((s,p)=>s+p.descuento,0);
+    const totPct=_totA.pct!=null?Math.round(_totA.pct):(totExig>0?Math.round(totRec/totExig*100):0);
     const thS='padding:5px 8px;font-size:10px;font-weight:700;text-align:right;border-bottom:1.5px solid rgba(255,255,255,.3)';
     const tdS='padding:4px 8px;font-size:11px;border-bottom:1px solid var(--azul3)';
     tw.innerHTML=`<table style="width:100%;border-collapse:collapse">
@@ -5466,13 +5491,13 @@ function _actualizarResumenActa(a){
 // ── Vista Previa — idéntica al PDF DR-BC-AP-F-11 ──────────────────────────
 function renderActaPreview(){
   const a=leerActaForm();
-  const res=_acta_actual?.resultados||S._resultados||{};
-  const progData=Object.entries(res).map(([pid,r])=>({
-    nombre:r.nombre_acta||pid,
-    pct:r.pct_cumplimiento||0,
-    exigido:r.total_exigido||0,
-    reconocido:r.total_reconocido||0,
-    descuento:r.total_descuento||0,
+  const resData=_acta_actual?.resultados||S._resultados||{};
+  const progData=(resData.resumen||[]).map(p=>({
+    nombre:p.nombre||'—',
+    pct:p.pct||0,
+    exigido:p.exigido||0,
+    reconocido:p.reconocido||0,
+    descuento:p.descuento||0,
   }));
 
   const AZUL="#1a3a6b";
@@ -5565,9 +5590,10 @@ function renderActaPreview(){
     </table>`;
 
   // ── Gráfica (igual que en el PDF — "PROMOCION Y MANTENIMIENTO DE LA SALUD") ──
-  const totExig=progData.reduce((s,p)=>s+p.exigido,0);
-  const totRec=progData.reduce((s,p)=>s+p.reconocido,0);
-  const totDesc=progData.reduce((s,p)=>s+p.descuento,0);
+  const _tot=resData.totales||{};
+  const totExig=_tot.exigido||progData.reduce((s,p)=>s+p.exigido,0);
+  const totRec=_tot.reconocido||progData.reduce((s,p)=>s+p.reconocido,0);
+  const totDesc=_tot.descuento||progData.reduce((s,p)=>s+p.descuento,0);
 
   const barHtml=progData.length?`
     <div style="border:${BRD};border-top:none;padding:10px 12px 6px;page-break-inside:avoid">
@@ -5655,7 +5681,7 @@ function renderActaPreview(){
     </td>`;
 
   const funcs=(a.funcionarios||[]);
-  const funcNom=funcs.length?funcs.join(' / '):a.evaluador||'';
+  const funcNom=_eval5Seleccionados.length?_eval5Seleccionados.join(' / '):(funcs.length?funcs.join(' / '):a.evaluador||leerInfo().evaluador||'');
 
   const _previewTarget=window._step5PreviewMode?'step5-preview-doc':'acta-preview-doc';
   document.getElementById(_previewTarget).innerHTML=`
@@ -5793,6 +5819,72 @@ function _quitarEvaluador(idx){
   _evalSeleccionados.splice(idx,1);
   _renderEvaluadorChips();
   document.getElementById('evaluador').value=_evalSeleccionados.join(' / ');
+}
+
+// ── Evaluadores en Step 5 ─────────────────────────────────────────────────
+let _eval5Seleccionados=[];
+
+function _poblarEvalSelect5(){
+  const sel=document.getElementById('step5-eval-select');if(!sel) return;
+  const lista=_getFuncLista();
+  sel.innerHTML='<option value="">— Seleccionar funcionario —</option>'
+    +lista.map(f=>`<option value="${f}">${f}</option>`).join('');
+}
+
+function _agregarEval5(){
+  const sel=document.getElementById('step5-eval-select');
+  const nombre=sel?.value;if(!nombre) return;
+  if(_eval5Seleccionados.includes(nombre)) return;
+  _eval5Seleccionados.push(nombre);
+  _renderEval5Chips();
+  document.getElementById('evaluador').value=_eval5Seleccionados.join(' / ');
+  sel.value='';
+  _refrescarMiniResumen();
+}
+
+function _quitarEval5(idx){
+  _eval5Seleccionados.splice(idx,1);
+  _renderEval5Chips();
+  document.getElementById('evaluador').value=_eval5Seleccionados.join(' / ');
+  _refrescarMiniResumen();
+}
+
+function _renderEval5Chips(){
+  const cont=document.getElementById('step5-evaluadores-chips');if(!cont) return;
+  cont.innerHTML=_eval5Seleccionados.map((n,i)=>
+    `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--azul4);color:var(--azul);border:1.5px solid var(--azul3);border-radius:20px;padding:3px 10px;font-size:11.5px;font-weight:600">
+      ${n}
+      <button onclick="_quitarEval5(${i})" style="border:none;background:none;color:var(--gris3);cursor:pointer;font-size:11px;line-height:1">&times;</button>
+    </span>`
+  ).join('');
+}
+
+function _toggleGestionFunc5(){
+  const p=document.getElementById('step5-func-gestion');if(!p) return;
+  if(p.style.display==='none'){p.style.display='block';_renderGestionFuncList5();}
+  else p.style.display='none';
+}
+
+function _renderGestionFuncList5(){
+  const el=document.getElementById('step5-func-gestion-list');if(!el) return;
+  let stored=[];try{stored=JSON.parse(localStorage.getItem('dusakawi_funcionarios')||'[]');}catch(e){}
+  const lista=_getFuncLista();
+  el.innerHTML=lista.map(f=>{
+    const esDefault=_FUNC_DEFAULT.includes(f);
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;border-radius:7px;background:${esDefault?'rgba(79,70,229,.06)':'#fff'};border:1px solid var(--azul3)">
+      <span style="font-size:11.5px;font-weight:600">${f}</span>
+      ${esDefault?'<span style="font-size:9.5px;color:var(--gris3);font-style:italic">predeterminado</span>'
+        :`<button onclick="_removeFuncLista('${f.replace(/'/g,"&#39;")}');_renderGestionFuncList5();_poblarEvalSelect5()" style="background:none;border:none;cursor:pointer;font-size:13px;color:var(--rojo)" title="Quitar">✕</button>`}
+    </div>`;
+  }).join('');
+}
+
+function _addFuncLista5(){
+  const inp=document.getElementById('step5-func-nuevo');if(!inp) return;
+  const nombre=inp.value.trim().toUpperCase();if(!nombre) return;
+  let stored=[];try{stored=JSON.parse(localStorage.getItem('dusakawi_funcionarios')||'[]');}catch(e){}
+  if(!stored.includes(nombre)&&!_FUNC_DEFAULT.includes(nombre)){stored.push(nombre);localStorage.setItem('dusakawi_funcionarios',JSON.stringify(stored));}
+  inp.value='';_poblarEvalSelect5();poblarFuncSelect();_renderGestionFuncList5();
 }
 
 function _guardarGlobal(campo){
